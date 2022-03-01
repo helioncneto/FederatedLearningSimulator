@@ -1,0 +1,102 @@
+mode: dirichlet
+data_unbalanced: False
+t_sne: False
+umap: False
+umap_dim: 2
+project: federated_learning
+method: FedAGM
+loss: CE
+return_feature: False
+hard_aug: False
+global_method: FedAGM
+additional_experiment_name: ""
+seed: 0
+cuda_visible_device: 0
+workers: 8
+create_client_dataset: False
+config: configs/cifar_actl2.yaml
+log-dir:
+
+
+arch: ResNet18
+global_epochs: 1000
+warmup_epoch: 1
+centralized_epochs: 500
+local_epochs: 5
+image_epochs: 500
+num_of_clients: 100
+participation_rate: 0.05
+batch_size: 50
+optimizer: sgd
+lr: 0.1
+momentum: 0.0
+weight_decay: 1e-3
+learning_rate_decay: 0.995
+gr_clipping_max_norm: 10
+
+dirichlet_alpha: 0.3
+alpha_mul_epoch: False
+data: "./data"
+client_data: "./client_data"
+num-classes: 10
+
+print-freq: 1
+t_sne_freq: 1
+umap_freq: 1
+alpha: 1
+
+pod_normalize: True
+collapse_channels: spatial
+regularization_unit: Conv
+knowledge_temperature: 1
+lambda1: 1
+lambda2: 1
+lambda3: 1
+
+mu: 0.001
+
+beta_1: 0.9
+beta_2: 0.99
+eta: 1e-2
+erver_learning_rate_decay: 1
+tau: 1.0
+
+g_lr: 1.0
+lamb: 0.1
+
+temp: 0.2
+temp2: 1
+l2_norm: False
+epsilon: 0.0
+
+num_img: 10
+alpha_proto: 0.0
+cealpha_proto: 1.0
+alpha_proto_mul_epoch: False
+alpha_proto_divide_epoch: False
+
+rampup_length: 200
+rampup_coefficient: 5
+
+p_lr_beta: 1.0
+
+abs_thres: False
+thres: 0.5
+
+g_temp: 1e1
+g1: 1
+g2: 1
+g3: 1e-3
+
+gamma: 0.9
+beta: 0.0
+warmup: 0
+
+only_ce: False
+only_linear: False
+no_sm: False
+no_os: False
+analysis: False
+compare_with_center: 0
+
+set: CIFAR100
