@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 from sklearn import preprocessing
 
 
-class CICIDS2017Dataset (Dataset):
+class CICIDS2017Dataset(Dataset):
     def __init__(self, data, normalize='minmax', debug=False):
         self.debug = debug
         self.data = data
