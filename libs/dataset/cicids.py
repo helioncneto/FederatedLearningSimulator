@@ -97,3 +97,5 @@ def download_cicids2017(path):
     files = os.listdir(os.path.join(path, 'MachineLearningCVE'))
     for file in files:
         shutil.move(os.path.join(path, 'MachineLearningCVE', file), os.path.join(path, file))
+    os.rmdir('MachineLearningCVE')
+    os.remove("MachineLearningCSV.zip")
