@@ -3,7 +3,7 @@ import sys
 import time
 
 from args_dir.federated import args
-from libs.dataset.cicids import CICIDS2017Dataset, create_cic_ids_file
+from libs.dataset.cicids import CICIDS2017Dataset, create_cic_ids_file, download_cicids2017
 
 import torch
 import torchvision
@@ -109,6 +109,10 @@ elif args.set in ['Tiny-ImageNet']:
 
 elif args.set in ['CICIDS2017']:
     files_path = os.path.join('data', 'CICIDS2017')
+    if not os.path.exists(files_path):
+        os.mkdir(files_path)
+        print("=> Downloading CICIDS2017 dataset...")
+        download_cicids2017(path=files_path)
     cic_ids_path = os.path.join(files_path, 'cicids2017.csv')
     if not os.path.exists(cic_ids_path):
         print("CICIDS2017 file not exists.")

@@ -7,4 +7,7 @@ data/*
 data1
 client_data/*
 .idea
+
 test_script.py
+fedagm_commands.txt
+fedagm_job.sh
