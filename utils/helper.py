@@ -82,9 +82,9 @@ def get_numclasses(args):
     return num_classes
 
 def get_model(args):
-    num_classes=get_numclasses(args)
+    num_classes = get_numclasses(args)
     print("=> Creating model '{}'".format(args.arch))
-    model = models.__dict__[args.arch](num_classes=num_classes,l2_norm=args.l2_norm)
+    model = models.__dict__[args.arch](num_classes=num_classes, l2_norm=args.l2_norm)
     return model
 
 

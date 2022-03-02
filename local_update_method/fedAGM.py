@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from utils import DatasetSplit
 import torch
 import copy
+from utils.helper import get_numclasses
 
 
 class LocalUpdate(object):
@@ -14,7 +15,11 @@ class LocalUpdate(object):
         self.lr=lr
         self.local_epoch=local_epoch
         self.device=device
-        self.loss_func = nn.CrossEntropyLoss()
+        self.oneclass = True if get_numclasses(args) <= 1 else False
+        if self.oneclass:
+            self.loss_func = nn.BCELoss()
+        else:
+            self.loss_func = nn.CrossEntropyLoss()
         self.selected_clients = []
         self.ldr_train = DataLoader(DatasetSplit(dataset, idxs), batch_size=batch_size, shuffle=True)
         self.alpha=alpha
@@ -32,14 +37,17 @@ class LocalUpdate(object):
         # Train and update
         for iter in range(self.local_epoch):
             batch_loss = []
-            for batch_idx, (images, labels) in enumerate(self.ldr_train):
-                images, labels = images.to(self.device), labels.to(self.device)
+            for batch_idx, (x, labels) in enumerate(self.ldr_train):
+                x, labels = x.to(self.device), labels.to(self.device)
                 net.zero_grad()
                 if self.args.arch == "ResNet18":
-                    log_probs = net(images)
+                    log_probs = net(x)
                 else:
-                    log_probs= net(images)
-                ce_loss = self.loss_func(log_probs, labels)
+                    log_probs = net(x)
+                if self.oneclass:
+                    ce_loss = self.loss_func(log_probs, labels.float())
+                else:
+                    ce_loss = self.loss_func(log_probs, labels)
 
                 # Weight L2 loss
                 reg_loss = 0

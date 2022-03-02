@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
-
 import torch.nn as nn
 import torch.nn.functional as F
 import copy
-# In[1]:
+
 
 class FC2(nn.Module):
     def __init__(self):
@@ -23,6 +20,23 @@ class FC2(nn.Module):
         x = F.relu(self.fc2(x))
         x = (self.fc3(x))
         return x
+
+
+class FC2_Base(nn.Module):
+    def __init__(self, in_layer, num_classes, l2_norm):
+        super(FC2_Base, self).__init__()
+        self.fc1 = nn.Linear(in_layer, 200)
+        self.fc2 = nn.Linear(200, 100)
+        self.fc3 = nn.Linear(100, num_classes)
+
+    def forward(self, x):
+
+        #x = x.view(-1, 28*28)
+        x = F.relu(self.fc1(x.float()))
+        x = F.relu(self.fc2(x))
+        x = F.sigmoid(self.fc3(x))
+        return x.squeeze().float()
+
 
 class CNN(nn.Module):
     def __init__(self,num_classes = 10,l2_norm = False):
@@ -43,6 +57,7 @@ class CNN(nn.Module):
         x = F.relu(self.fc2(x))
         x = (self.fc3(x))
         return x
+
 
 class CNN_dropout(nn.Module):
     def __init__(self):
@@ -67,10 +82,7 @@ class CNN_dropout(nn.Module):
         x = self.dropout2(x)
         x = (self.fc3(x))
         return x
-      
-
-# In[ ]:
 
 
-
-
+def FCBase(num_classes, l2_norm=False):
+    return FC2_Base(in_layer=78, num_classes=num_classes, l2_norm=l2_norm)

@@ -23,11 +23,13 @@ from utils import calculate_delta_cv,calculate_delta_variance, calculate_diverge
 from utils import CenterUpdate
 from utils import *
 
-def GlobalUpdate(args,device,trainset,testloader,LocalUpdate):
+
+def GlobalUpdate(args, device, trainset, testloader, LocalUpdate):
     model = get_model(args)
     model.to(device)
     wandb.watch(model)
     model.train()
+    oneclass = True if get_numclasses(args) <= 1 else False
 
     dataset = get_dataset(args, trainset, args.mode)
     loss_train = []
@@ -102,7 +104,10 @@ def GlobalUpdate(args,device,trainset,testloader,LocalUpdate):
         print(' num_of_data_clients : ', num_of_data_clients)
         print(' Average loss {:.3f}'.format(loss_avg))
         loss_train.append(loss_avg)
-        loss_func = nn.CrossEntropyLoss()
+        if oneclass:
+            loss_func = nn.BCELoss()
+        else:
+            loss_func = nn.CrossEntropyLoss()
         prev_model = copy.deepcopy(model)
         prev_model.load_state_dict(global_weight)
         if epoch % args.print_freq == 0:
@@ -117,7 +122,10 @@ def GlobalUpdate(args,device,trainset,testloader,LocalUpdate):
                 for data in testloader:
                     images, labels = data[0].to(device), data[1].to(device)
                     outputs = model(images)
-                    ce_loss = loss_func(outputs, labels)
+                    if oneclass:
+                        ce_loss = loss_func(outputs, labels.float())
+                    else:
+                        ce_loss = loss_func(outputs, labels)
 
                     ## Weight L2 loss
                     reg_loss = 0
@@ -127,7 +135,10 @@ def GlobalUpdate(args,device,trainset,testloader,LocalUpdate):
 
 
                     loss = args.alpha * ce_loss + 0.5 * args.mu * reg_loss
-                    _, predicted = torch.max(outputs.data, 1)
+                    if oneclass:
+                        predicted = outputs
+                    else:
+                        _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
                     correct += (predicted == labels).sum().item()
 
@@ -151,7 +162,7 @@ def GlobalUpdate(args,device,trainset,testloader,LocalUpdate):
 
         this_lr *= args.learning_rate_decay
         this_tau *=args.server_learning_rate_decay
-        if args.alpha_mul_epoch == True:
+        if args.alpha_mul_epoch:
             this_alpha = args.alpha * (epoch + 1)
-        elif args.alpha_divide_epoch == True:
+        elif args.alpha_divide_epoch:
             this_alpha = args.alpha / (epoch + 1)
