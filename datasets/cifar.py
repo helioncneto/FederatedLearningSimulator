@@ -126,27 +126,27 @@ def cifar_dirichlet_balanced(dataset, n_nets, alpha=0.5):
         y_train=torch.zeros(len(dataset),dtype=torch.long)
 
         for a in range(len(dataset)):
-            y_train[a]=(dataset[a][1])
+            y_train[a] = (dataset[a][1])
         n_train = len(dataset)
 
         min_size = 0
         K = len(dataset.class_to_idx)
-        N=len(dataset)
+        N = len(dataset)
         N = y_train.shape[0]
         print(N)
-        net_dataidx_map = {i: np.array([],dtype='int64') for i in range(n_nets)}
+        net_dataidx_map = {i: np.array([], dtype='int64') for i in range(n_nets)}
         assigned_ids = []
         idx_batch = [[] for _ in range(n_nets)]
-        num_data_per_client=int(N/n_nets)
+        num_data_per_client = int(N/n_nets)
         for i in range(n_nets):
             weights = torch.zeros(N)
             proportions = np.random.dirichlet(np.repeat(alpha, K))
             for k in range(K):
                 idx_k = np.where(y_train == k)[0]
-                weights[idx_k]=proportions[k]
+                weights[idx_k] = proportions[k]
             weights[assigned_ids] = 0.0
             idx_batch[i] = (torch.multinomial(weights, num_data_per_client, replacement=False)).tolist()
-            assigned_ids+=idx_batch[i]
+            assigned_ids+= idx_batch[i]
 
         for j in range(n_nets):
             np.random.shuffle(idx_batch[j])

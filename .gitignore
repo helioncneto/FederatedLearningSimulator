@@ -5,4 +5,6 @@ __pycache__/*
 
 data/*
 data1
+client_data/*
 .idea
+test_script.py

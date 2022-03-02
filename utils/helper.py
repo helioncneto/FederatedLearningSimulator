@@ -70,11 +70,15 @@ def check_data_distribution_aug(dataloader,class_num:int=10,default_dist:torch.t
 
 def get_numclasses(args):
     if args.set in ['CIFAR10',"MNIST"]:
-        num_classes=10
+        num_classes = 10
     elif args.set in ["CIFAR100"]:
-        num_classes=100
+        num_classes = 100
     elif args.set in ["Tiny-ImageNet"]:
-        num_classes=200
+        num_classes = 200
+    elif args.set in ["CICIDS2017"]:
+        num_classes = 1
+    else:
+        raise Exception("The dataset specified is not available")
     return num_classes
 
 def get_model(args):

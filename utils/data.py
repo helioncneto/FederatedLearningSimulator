@@ -41,28 +41,26 @@ class DatasetSplitMultiView(Dataset):
 
 def get_dataset(args, trainset, mode='iid'):
     directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced==True else '') + 'balanced'
-    filepath=directory+'/' + mode + (str(args.dirichlet_alpha) if mode == 'dirichlet' else '') + '_clients' +str(args.num_of_clients) +'.txt'
+    filepath = directory + '/' + mode + (str(args.dirichlet_alpha) if mode == 'dirichlet' else '') + '_clients' + str(args.num_of_clients) + '.txt'
     check_already_exist = os.path.isfile(filepath) and (os.stat(filepath).st_size != 0)
     create_new_client_data = not check_already_exist or args.create_client_dataset
     print("create new client data: " + str(create_new_client_data))
 
-    if create_new_client_data == False:
+    if create_new_client_data is False:
         try:
-
             dataset = {}
             with open(filepath) as f:
                 for idx, line in enumerate(f):
                     dataset = eval(line)
         except:
             print("Have problem to read client data")
-
-    if create_new_client_data == True:
+    elif create_new_client_data:
         if mode == 'iid':
             dataset = cifar_iid(trainset, args.num_of_clients)
         elif mode == 'skew1class':
             dataset = cifar_noniid(trainset, args.num_of_clients)
         elif mode == 'dirichlet':
-            if args.data_unbalanced==True:
+            if args.data_unbalanced:
                 dataset = cifar_dirichlet_unbalanced(trainset, args.num_of_clients, alpha=args.dirichlet_alpha)
             else:
                 dataset = cifar_dirichlet_balanced(trainset, args.num_of_clients, alpha=args.dirichlet_alpha)
@@ -73,7 +71,6 @@ def get_dataset(args, trainset, mode='iid'):
             os.makedirs(directory, exist_ok=True)
             with open(filepath, 'w') as f:
                 print(dataset, file=f)
-
         except:
             print("Fail to write client data at " + directory)
 

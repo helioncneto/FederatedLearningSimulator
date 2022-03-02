@@ -3,6 +3,8 @@ import sys
 import time
 
 from args_dir.federated import args
+from libs.dataset.cicids import CICIDS2017Dataset, create_cic_ids_file
+
 import torch
 import torchvision
 from torchvision import datasets, transforms
@@ -15,6 +17,7 @@ import random
 import wandb
 from build_method import build_local_update_module
 from build_global_method import build_global_update_module
+from sklearn.model_selection import train_test_split
 import datasets as local_datasets
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import copy
@@ -37,7 +40,7 @@ wandb.run.name=experiment_name
 wandb.run.save()
 wandb.config.update(args)
 
-random_seed=args.seed
+random_seed = args.seed
 torch.manual_seed(random_seed)
 torch.cuda.manual_seed(random_seed)
 torch.cuda.manual_seed_all(random_seed) # if use multi-GPU
@@ -50,21 +53,10 @@ random.seed(random_seed)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 ## Build Dataset
-class CICIDS2017Dataset (Dataset):
-    def __init__(self, path):
-        self.data = pd.read_csv(path)
-        self.y = self.data[' Label']
-        self.x = self.data.drop(' Label', axis=1)
+trainset = None
+testset = None
 
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        x_tensor = torch.from_numpy(self.x.iloc[idx].to_numpy())
-        y_tensor = torch.from_numpy(self.y.iloc[idx].to_numpy())
-        return x_tensor, y_tensor
-
-if args.set in ['CIFAR10','CIFAR100']:
+if args.set in ['CIFAR10', 'CIFAR100']:
     normalize=transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)) if args.set=='CIFAR10' else transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
 
     transform_train = transforms.Compose(
@@ -117,65 +109,33 @@ elif args.set in ['Tiny-ImageNet']:
 
 elif args.set in ['CICIDS2017']:
     files_path = os.path.join('data', 'CICIDS2017')
-    files = os.listdir(files_path)
     cic_ids_path = os.path.join(files_path, 'cicids2017.csv')
-
     if not os.path.exists(cic_ids_path):
-        initial_time = time.time()
-        print('CICIDS2017 file not exist. Creating CICIDS2017 file...')
-        cic_file = open(cic_ids_path, 'x')
-        for n_file, file in enumerate(files):
-            cur_file = open(os.path.join(files_path, file), 'r')
-            for n, line in enumerate(cur_file.readlines()):
-                if n != 0 or n_file == 0:
-                    if n == 0 and n_file == 0:
-                        cic_file.write(line)
-                    else:
-                        line_list = line.split(',')
-                        #print(line_list[-1])
-                        if line_list[-1][-1:] == '\n':
-                            if line_list[-1][:-1] == 'BENIGN':
-                                line_list[-1] = '0'
-                            else:
-                                line_list[-1] = '1'
-                        else:
-                            if line_list[-1] == 'BENIGN':
-                                line_list[-1] = '0'
-                            else:
-                                line_list[-1] = '1'
-                        last_line = len(line_list) - 1
-                        line_list = [float(i) if n != last_line else int(i) for n, i in enumerate(line_list)]
-                        cic_file.write(str(line_list)[1:-1])
-                    cic_file.write('\n')
-            cur_file.close()
-        cic_file.close()
-        end_time = time.time()
-        print(f'file created in {round(end_time - initial_time, 2)} seconds')
-
+        print("CICIDS2017 file not exists.")
+        create_cic_ids_file()
     print('Loading CICIDS2017 file...')
 
-    dataset = CICIDS2017Dataset(cic_ids_path)
-    dataloader = DataLoader(dataset, batch_size=5, shuffle=True)
+    data = pd.read_csv(cic_ids_path)
+    data['Flow Bytes/s'] = data['Flow Bytes/s'].astype(float)
+    data[' Flow Packets/s'] = data[' Flow Packets/s'].astype(float)
+    # Drop NAN and INF
+    data = data.replace(np.inf, np.NaN)
+    data.dropna(inplace=True)
 
-    print(next(iter(dataloader)))
-
-
-
-
+    train, test = train_test_split(data, test_size=0.3)
+    trainset = CICIDS2017Dataset(train)
+    testset = CICIDS2017Dataset(test)
 else:
     assert False
 
-
-
-#print(trainset)
-'''                                           
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size,
-                                          shuffle=True, num_workers=args.workers)
-testloader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size,
-                                         shuffle=False, num_workers=args.workers)
-    
+if trainset is not None and testset is not None:
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size,
+                                              shuffle=True, num_workers=args.workers)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size,
+                                             shuffle=False, num_workers=args.workers)
+else:
+    raise Exception("Train and Test dataset are not setup")
 
 LocalUpdate = build_local_update_module(args)
-global_update=build_global_update_module(args)
+global_update = build_global_update_module(args)
 global_update(args=args, device=device, trainset=trainset, testloader=testloader, LocalUpdate=LocalUpdate)
-'''
