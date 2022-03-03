@@ -50,7 +50,8 @@ def GlobalUpdate(args, device, trainset, testloader, LocalUpdate):
         local_loss = []
         local_delta = []
         global_weight = copy.deepcopy(model.state_dict())
-        if (epoch==0) or (args.participation_rate<1) :
+        # User selection
+        if epoch == 0 or args.participation_rate < 1:
             selected_user = np.random.choice(range(args.num_of_clients), m, replace=False)
         else:
             pass 
@@ -102,6 +103,7 @@ def GlobalUpdate(args, device, trainset, testloader, LocalUpdate):
         model.load_state_dict(FedAvg_weight)
         loss_avg = sum(local_loss) / len(local_loss)
         print(' num_of_data_clients : ', num_of_data_clients)
+        print(' Participants IDS: ', selected_user)
         print(' Average loss {:.3f}'.format(loss_avg))
         loss_train.append(loss_avg)
         if oneclass:
