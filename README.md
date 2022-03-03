@@ -4,7 +4,7 @@ PyTorch implementation for federated learning simulation and evaluation. The sim
 
 # Prerequisites
 
-To install all the prerequisites, you can use ca following command:
+To install all the prerequisites, you can use the following command:
 
 ~~~
 conda create --name <env> --file requirements.txt
