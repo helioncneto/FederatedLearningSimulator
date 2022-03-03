@@ -136,7 +136,7 @@ def GlobalUpdate(args, device, trainset, testloader, LocalUpdate):
 
                     loss = args.alpha * ce_loss + 0.5 * args.mu * reg_loss
                     if oneclass:
-                        predicted = outputs
+                        predicted = 1 if outputs > 0.5 else 0
                     else:
                         _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
