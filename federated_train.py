@@ -3,7 +3,7 @@ import sys
 import time
 
 from args_dir.federated import args
-from libs.dataset.cicids import CICIDS2017Dataset, create_cic_ids_file, download_cicids2017
+from libs.dataset.cicids import *
 
 import torch
 import torchvision
@@ -48,6 +48,8 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(random_seed)
 random.seed(random_seed)
+
+# Check if the data path exists. If not it will create
 if not os.path.exists(args.data):
     os.mkdir(args.data)
 
@@ -109,17 +111,26 @@ elif args.set in ['Tiny-ImageNet']:
     #classes = tuple(str(i) for i in range(100))
 
 elif args.set in ['CICIDS2017']:
-    files_path = os.path.join('data', 'CICIDS2017')
-    if not os.path.exists(files_path):
-        os.mkdir(files_path)
-        print("=> Downloading CICIDS2017 dataset...")
-        download_cicids2017(path=files_path)
+    files_path = os.path.join(args.data, 'CICIDS2017')
     cic_ids_path = os.path.join(files_path, 'cicids2017.csv')
-    if not os.path.exists(cic_ids_path):
-        print("CICIDS2017 file not exists.")
-        create_cic_ids_file()
-    print('Loading CICIDS2017 file...')
 
+    if os.path.exists(files_path):
+        if os.path.exists(cic_ids_path):
+            if os.stat(cic_ids_path).st_size < 1474940000:
+                print("[WARN] Somthing happend while downloading CICIDS2017")
+                [os.remove(os.path.join(files_path, cur_file)) for cur_file in os.listdir(files_path)]
+                download_cicids2017(path=files_path)
+                create_cic_ids_file()
+        else:
+            print("CICIDS2017 file not exists.")
+            download_cicids2017(path=files_path)
+            create_cic_ids_file()
+    else:
+        os.mkdir(files_path)
+        download_cicids2017(path=files_path)
+        create_cic_ids_file()
+
+    print('Loading CICIDS2017 file...')
     data = pd.read_csv(cic_ids_path)
     data['Flow Bytes/s'] = data['Flow Bytes/s'].astype(float)
     data[' Flow Packets/s'] = data[' Flow Packets/s'].astype(float)

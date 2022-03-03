@@ -4,6 +4,7 @@ __pycache__/*
 /*/__pycache__/*
 
 data/*
+log
 data1
 client_data/*
 .idea
@@ -11,3 +12,4 @@ client_data/*
 test_script.py
 fedagm_commands.txt
 fedagm_job.sh
+slurm-*

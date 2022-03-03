@@ -88,14 +88,21 @@ def create_cic_ids_file():
     end_time = time.time()
     print(f'file created in {round(end_time - initial_time, 2)} seconds')
 
-
-def download_cicids2017(path):
-    url = "http://205.174.165.80/CICDataset/CIC-IDS-2017/Dataset/MachineLearningCSV.zip"
-    wget.download(url, path)
+def unzip_cicids(path):
     with zipfile.ZipFile(os.path.join(path, 'MachineLearningCSV.zip'), 'r') as zip_ref:
         zip_ref.extractall(path)
+
+def move_cicids(path):
     files = os.listdir(os.path.join(path, 'MachineLearningCVE'))
     for file in files:
         shutil.move(os.path.join(path, 'MachineLearningCVE', file), os.path.join(path, file))
     os.rmdir(os.path.join(path, 'MachineLearningCVE'))
     os.remove(os.path.join(path, 'MachineLearningCSV.zip'))
+
+def download_cicids2017(path):
+    url = "http://205.174.165.80/CICDataset/CIC-IDS-2017/Dataset/MachineLearningCSV.zip"
+    wget.download(url, path)
+
+    unzip_cicids(path)
+    move_cicids(path)
+
