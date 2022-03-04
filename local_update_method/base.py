@@ -2,7 +2,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from utils import DatasetSplit,IL,IL_negsum
 from local_update_method.global_and_online_model import *
-
+from utils.helper import get_numclasses
 
 
 class LocalUpdate(object):
@@ -14,7 +14,11 @@ class LocalUpdate(object):
         self.lr=lr
         self.local_epoch=local_epoch
         self.device=device
-        self.loss_func=nn.CrossEntropyLoss()
+        self.oneclass = True if get_numclasses(args) <= 1 else False
+        if self.oneclass:
+            self.loss_func = nn.BCELoss()
+        else:
+            self.loss_func = nn.CrossEntropyLoss()
         self.selected_clients = []
         self.ldr_train = DataLoader(DatasetSplit(dataset, idxs), batch_size=batch_size, shuffle=True)
         self.alpha=alpha
@@ -34,7 +38,10 @@ class LocalUpdate(object):
                 images, labels = images.to(self.device), labels.to(self.device)
                 net.zero_grad()
                 log_probs = model(images)
-                loss = self.loss_func(log_probs, labels)
+                if self.oneclass:
+                    loss = self.loss_func(log_probs, labels.float())
+                else:
+                    loss = self.loss_func(log_probs, labels)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), self.args.gr_clipping_max_norm)
                 optimizer.step()

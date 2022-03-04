@@ -31,6 +31,7 @@ def GlobalUpdate(args,device,trainset,testloader,LocalUpdate):
     model.to(device)
     wandb.watch(model)
     model.train()
+    oneclass = True if get_numclasses(args) <= 1 else False
 
     dataset = get_dataset(args, trainset, args.mode)
     loss_train = []
@@ -69,15 +70,16 @@ def GlobalUpdate(args,device,trainset,testloader,LocalUpdate):
         FedAvg_weight = copy.deepcopy(local_weight[0])
         for key in FedAvg_weight.keys():
             for i in range(len(local_weight)):
-                if i==0:
-                    FedAvg_weight[key]*=num_of_data_clients[i]
+                if i == 0:
+                    FedAvg_weight[key] *= num_of_data_clients[i]
                 else:                       
                     FedAvg_weight[key] += local_weight[i][key]*num_of_data_clients[i]
             FedAvg_weight[key] /= total_num_of_data_clients
         model.load_state_dict(FedAvg_weight)
 
         loss_avg = sum(local_loss) / len(local_loss)
-        print(' num_of_data_clients : ',num_of_data_clients)                                   
+        print(' num_of_data_clients : ', num_of_data_clients)
+        print(' Participants IDS: ', selected_user)
         print(' Average loss {:.3f}'.format(loss_avg))
         loss_train.append(loss_avg)
 
@@ -89,7 +91,10 @@ def GlobalUpdate(args,device,trainset,testloader,LocalUpdate):
                 for data in testloader:
                     images, labels = data[0].to(device), data[1].to(device)
                     outputs = model(images)
-                    _, predicted = torch.max(outputs.data, 1)
+                    if oneclass:
+                        predicted = torch.from_numpy(np.array([1 if i > 0.5 else 0 for i in outputs]))
+                    else:
+                        _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
                     correct += (predicted == labels).sum().item()
 
