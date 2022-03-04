@@ -3,7 +3,7 @@ from libs.dataset.dataset_loader import *
 
 import torch
 import numpy as np
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import os
 import random
 import wandb
@@ -54,20 +54,20 @@ def main():
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    dataset_lookup_table = {
+    factory_lookup_table = {
         'CIFAR10': Cifar10DatasetFactory(),
         'CIFAR100': Cifar100DatasetFactory(),
         'Tiny-ImageNet': TinyImageNetDatasetFactory(),
         'CICIDS2017': CICIDS2017DatasetFactory()
     }
 
-    ## Build Dataset
+    # Build Dataset
     try:
-        dataset = dataset_lookup_table[args.set]
-        trainset, testset = dataset.get_dataset()
-        #trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size,
+        factory = factory_lookup_table[args.set]
+        trainset, testset = factory.get_dataset()
+        # trainloader = DataLoader(trainset, batch_size=args.batch_size,
         #                                          shuffle=True, num_workers=args.workers)
-        testloader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size,
+        testloader = DataLoader(testset, batch_size=args.batch_size,
                                                  shuffle=False, num_workers=args.workers)
         LocalUpdate = build_local_update_module(args)
         global_update = build_global_update_module(args)
