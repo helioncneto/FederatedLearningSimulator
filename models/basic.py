@@ -85,4 +85,4 @@ class CNN_dropout(nn.Module):
 
 
 def FCBase(num_classes, l2_norm=False):
-    return FC2_Base(in_layer=78, num_classes=num_classes, l2_norm=l2_norm)
+    return FC2_Base(in_layer=77, num_classes=num_classes, l2_norm=l2_norm)
