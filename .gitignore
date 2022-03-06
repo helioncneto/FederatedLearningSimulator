@@ -8,6 +8,7 @@ log
 data1
 client_data/*
 .idea
+venv
 
 test_script.py
 fedagm_commands.txt

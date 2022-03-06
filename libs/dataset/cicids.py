@@ -28,7 +28,7 @@ class CICIDS2017Dataset(Dataset):
             pass'''
 
         self.y = self.data[' Label']
-        self.x = self.data.drop(' Label', axis=1)
+        self.x = self.data.drop([' Label', ' Destination Port,'], axis=1)
         if normalize == 'minmax':
             x = self.x.values
             col = self.x.columns
