@@ -48,6 +48,8 @@ class LocalUpdate(object):
                 if self.oneclass:
                     ce_loss = self.loss_func(log_probs, labels.float())
                 else:
+                    print(log_probs)
+                    print(labels)
                     ce_loss = self.loss_func(log_probs, labels)
 
                 # print(log_probs, labels)
