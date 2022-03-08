@@ -29,7 +29,7 @@ def GlobalUpdate(args, device, trainset, testloader, LocalUpdate):
     model.to(device)
     wandb.watch(model)
     model.train()
-    oneclass = True if get_numclasses(args) <= 1 else False
+    isCICIDS2017 = True if args.mode == "CICIDS2017" else False
 
     dataset = get_dataset(args, trainset, args.mode)
     loss_train = []
@@ -106,8 +106,8 @@ def GlobalUpdate(args, device, trainset, testloader, LocalUpdate):
         print(' Participants IDS: ', selected_user)
         print(' Average loss {:.3f}'.format(loss_avg))
         loss_train.append(loss_avg)
-        if oneclass:
-            loss_func = nn.BCELoss()
+        if isCICIDS2017:
+            loss_func = nn.NLLLoss()
         else:
             loss_func = nn.CrossEntropyLoss()
         prev_model = copy.deepcopy(model)
@@ -124,7 +124,7 @@ def GlobalUpdate(args, device, trainset, testloader, LocalUpdate):
                 for data in testloader:
                     x, labels = data[0].to(device), data[1].to(device)
                     outputs = model(x)
-                    if oneclass:
+                    if isCICIDS2017:
                         ce_loss = loss_func(outputs, labels.float())
                     else:
                         ce_loss = loss_func(outputs, labels)
@@ -137,13 +137,12 @@ def GlobalUpdate(args, device, trainset, testloader, LocalUpdate):
 
 
                     loss = args.alpha * ce_loss + 0.5 * args.mu * reg_loss
-                    if oneclass:
+                    if isCICIDS2017:
                         predicted = torch.from_numpy(np.array([1 if i > 0.5 else 0 for i in outputs]))
                     else:
                         _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
                     #print(f'Pred: {predicted} \n l=Label:{labels}')
-                    _, labels = torch.max(labels.data, 1)
                     correct += (predicted == labels).sum().item()
 
                     ce_loss_test.append(ce_loss.item())

@@ -127,10 +127,7 @@ def cifar_dirichlet_balanced(args, dataset, n_nets, alpha=0.5):
         n_train = len(dataset)
         y_train = torch.zeros(n_train, dtype=torch.long)
         for a in range(n_train):
-            if args.mode == 'CICIDS2017':
-                y_train[a] = (dataset[a][1][1])
-            else:
-                y_train[a] = (dataset[a][1])
+            y_train[a] = (dataset[a][1])
 
 
         min_size = 0

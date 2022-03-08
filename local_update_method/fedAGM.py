@@ -15,9 +15,9 @@ class LocalUpdate(object):
         self.lr = lr
         self.local_epoch = local_epoch
         self.device = device
-        self.oneclass = True if get_numclasses(args) <= 1 else False
-        if self.oneclass:
-            self.loss_func = nn.BCELoss()
+        self.isCICIDS2017 = True if args.mode == "CICIDS2017" else False
+        if self.isCICIDS2017:
+            self.loss_func = nn.NLLLoss()
         else:
             self.loss_func = nn.CrossEntropyLoss()
         self.selected_clients = []
@@ -45,11 +45,9 @@ class LocalUpdate(object):
                 #    log_probs = net(x)
                 #else:
                 #    log_probs = net(x)
-                if self.oneclass:
+                if self.isCICIDS2017:
                     ce_loss = self.loss_func(log_probs, labels.float())
                 else:
-                    print(log_probs)
-                    print(labels)
                     ce_loss = self.loss_func(log_probs, labels)
 
                 # print(log_probs, labels)
