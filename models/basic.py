@@ -34,8 +34,8 @@ class FC2_Base(nn.Module):
         #x = x.view(-1, 28*28)
         x = F.relu(self.fc1(x.float()))
         x = F.relu(self.fc2(x))
-        x = F.sigmoid(self.fc3(x))
-        return x.squeeze().float()
+        x = (self.fc3(x))
+        return x
 
 
 class CNN(nn.Module):

@@ -68,6 +68,8 @@ def check_data_distribution_aug(dataloader,class_num:int=10,default_dist:torch.t
     data_distribution=data_distribution/data_distribution.sum()
     return data_distribution
 
+
+# TODO: Hardcoded Change it
 def get_numclasses(args):
     if args.set in ['CIFAR10',"MNIST"]:
         num_classes = 10
@@ -76,7 +78,7 @@ def get_numclasses(args):
     elif args.set in ["Tiny-ImageNet"]:
         num_classes = 200
     elif args.set in ["CICIDS2017"]:
-        num_classes = 1
+        num_classes = 2
     else:
         raise Exception("The dataset specified is not available")
     return num_classes
@@ -89,11 +91,11 @@ def get_model(args):
 
 
 def get_optimizer(args, parameters):
-    if args.set=='CIFAR10':
+    if args.set == 'CIFAR10':
         optimizer = optim.SGD(parameters, lr=args.lr,momentum=args.momentum, weight_decay=args.weight_decay)
-    elif args.set=="MNIST":
+    elif args.set == "MNIST":
         optimizer = optim.SGD(parameters, lr=args.lr,momentum=args.momentum, weight_decay=args.weight_decay)
-    elif args.set=="CIFAR100":
+    elif args.set == "CIFAR100":
         optimizer = optim.SGD(parameters, lr=args.lr,momentum=args.momentum, weight_decay=args.weight_decay)
     else:
         print("Invalid mode")

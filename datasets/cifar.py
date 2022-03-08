@@ -121,17 +121,21 @@ def cifar_dirichlet_unbalanced(dataset, n_nets, alpha=0.5):
     return net_dataidx_map
     #return (X_train, y_train, X_test, y_test, net_dataidx_map, traindata_cls_counts)
 
-def cifar_dirichlet_balanced(dataset, n_nets, alpha=0.5):
-    with temp_seed(0):
-        y_train=torch.zeros(len(dataset),dtype=torch.long)
 
-        for a in range(len(dataset)):
-            y_train[a] = (dataset[a][1])
+def cifar_dirichlet_balanced(args, dataset, n_nets, alpha=0.5):
+    with temp_seed(0):
         n_train = len(dataset)
+        y_train = torch.zeros(n_train, dtype=torch.long)
+        for a in range(n_train):
+            if args.mode == 'CICIDS2017':
+                y_train[a] = (dataset[a][1][1])
+            else:
+                y_train[a] = (dataset[a][1])
+
 
         min_size = 0
         K = len(dataset.class_to_idx)
-        N = len(dataset)
+        # N = len(dataset)
         N = y_train.shape[0]
         print(N)
         net_dataidx_map = {i: np.array([], dtype='int64') for i in range(n_nets)}

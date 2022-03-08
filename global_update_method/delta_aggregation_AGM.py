@@ -122,8 +122,8 @@ def GlobalUpdate(args, device, trainset, testloader, LocalUpdate):
             total_loss_test = []
             with torch.no_grad():
                 for data in testloader:
-                    images, labels = data[0].to(device), data[1].to(device)
-                    outputs = model(images)
+                    x, labels = data[0].to(device), data[1].to(device)
+                    outputs = model(x)
                     if oneclass:
                         ce_loss = loss_func(outputs, labels.float())
                     else:
@@ -142,6 +142,8 @@ def GlobalUpdate(args, device, trainset, testloader, LocalUpdate):
                     else:
                         _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
+                    #print(f'Pred: {predicted} \n l=Label:{labels}')
+                    _, labels = torch.max(labels.data, 1)
                     correct += (predicted == labels).sum().item()
 
                     ce_loss_test.append(ce_loss.item())

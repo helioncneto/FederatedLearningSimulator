@@ -28,6 +28,8 @@ class CICIDS2017Dataset(Dataset):
             pass'''
 
         self.y = self.data[' Label']
+        labels = np.array([[1, 0] if i == 0 else [0, 1] for i in self.y])
+        self.y = pd.DataFrame(labels, columns=['BENIGN', 'ATTACK'], dtype=np.float32)
         self.x = self.data.drop([' Label', ' Destination Port'], axis=1)
         if normalize == 'minmax':
             x = self.x.values
@@ -42,7 +44,7 @@ class CICIDS2017Dataset(Dataset):
     def __getitem__(self, idx):
         #print(f'X: {self.x.iloc[idx].to_numpy()} \t Y:{self.y.iloc[idx]}')
         x_tensor = torch.from_numpy(self.x.iloc[idx].to_numpy())
-        y_tensor = torch.tensor(self.y.iloc[idx])
+        y_tensor = torch.from_numpy(self.y.iloc[idx].to_numpy())
         if self.debug:
             #print(len(x_tensor))
             print(y_tensor)

@@ -89,8 +89,8 @@ def GlobalUpdate(args,device,trainset,testloader,LocalUpdate):
             total = 0
             with torch.no_grad():
                 for data in testloader:
-                    images, labels = data[0].to(device), data[1].to(device)
-                    outputs = model(images)
+                    x, labels = data[0].to(device), data[1].to(device)
+                    outputs = model(x)
                     if oneclass:
                         predicted = torch.from_numpy(np.array([1 if i > 0.5 else 0 for i in outputs]))
                     else:

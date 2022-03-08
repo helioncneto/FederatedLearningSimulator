@@ -65,7 +65,7 @@ def get_dataset(args, trainset, mode='iid'):
             if args.data_unbalanced:
                 dataset = cifar_dirichlet_unbalanced(trainset, args.num_of_clients, alpha=args.dirichlet_alpha)
             else:
-                dataset = cifar_dirichlet_balanced(trainset, args.num_of_clients, alpha=args.dirichlet_alpha)
+                dataset = cifar_dirichlet_balanced(args, trainset, args.num_of_clients, alpha=args.dirichlet_alpha)
         else:
             print("Invalid mode ==> please select in iid, skew1class, dirichlet")
             return

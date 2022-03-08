@@ -12,9 +12,9 @@ class LocalUpdate(object):
     Local training for FedAGM
     """
     def __init__(self, args, lr, local_epoch, device, batch_size, dataset=None, idxs=None, alpha=0.0):
-        self.lr=lr
-        self.local_epoch=local_epoch
-        self.device=device
+        self.lr = lr
+        self.local_epoch = local_epoch
+        self.device = device
         self.oneclass = True if get_numclasses(args) <= 1 else False
         if self.oneclass:
             self.loss_func = nn.BCELoss()
@@ -22,8 +22,8 @@ class LocalUpdate(object):
             self.loss_func = nn.CrossEntropyLoss()
         self.selected_clients = []
         self.ldr_train = DataLoader(DatasetSplit(dataset, idxs), batch_size=batch_size, shuffle=True)
-        self.alpha=alpha
-        self.args=args
+        self.alpha = alpha
+        self.args = args
         self.K = len(self.ldr_train)
 
     def train(self, net, delta=None):
@@ -40,15 +40,17 @@ class LocalUpdate(object):
             for batch_idx, (x, labels) in enumerate(self.ldr_train):
                 x, labels = x.to(self.device), labels.to(self.device)
                 net.zero_grad()
-                if self.args.arch == "ResNet18":
-                    log_probs = net(x)
-                else:
-                    log_probs = net(x)
+                log_probs = net(x)
+                #if self.args.arch == "ResNet18":
+                #    log_probs = net(x)
+                #else:
+                #    log_probs = net(x)
                 if self.oneclass:
                     ce_loss = self.loss_func(log_probs, labels.float())
                 else:
                     ce_loss = self.loss_func(log_probs, labels)
 
+                # print(log_probs, labels)
                 # Weight L2 loss
                 reg_loss = 0
                 fixed_params = {n: p for n, p in fixed_model.named_parameters()}
