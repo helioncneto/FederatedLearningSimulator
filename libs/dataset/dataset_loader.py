@@ -126,7 +126,7 @@ class CICIDS2017DatasetFactory(IDatasetFactory):
         data['Flow Bytes/s'] = data['Flow Bytes/s'].astype(float)
         data[' Flow Packets/s'] = data[' Flow Packets/s'].astype(float)
         # Drop NAN and INF
-        data = data.replace(np.inf, np.NaN)
+        data = data.replace(np.inf, 1.7976931348623157e+301).replace(-np.inf, -1.7976931348623157e+301)
         data.dropna(inplace=True)
 
         train, test = train_test_split(data, test_size=0.3)

@@ -25,8 +25,8 @@ class FC2(nn.Module):
 class FC2_Base(nn.Module):
     def __init__(self, in_layer, num_classes, l2_norm):
         super(FC2_Base, self).__init__()
-        self.fc1 = nn.Linear(in_layer, 200)
-        self.fc2 = nn.Linear(200, 100)
+        self.fc1 = nn.Linear(in_layer, 50) # 200
+        self.fc2 = nn.Linear(50, 100) # 200 -> 100
         self.fc3 = nn.Linear(100, num_classes)
 
     def forward(self, x):
@@ -84,5 +84,13 @@ class CNN_dropout(nn.Module):
         return x
 
 
+def weight_init(m):
+    if isinstance(m, nn.Linear):
+        nn.init.kaiming_uniform_(m.weight)
+        m.bias.data.fill_(0.01)  # tots els bias a 0.01
+
+
 def FCBase(num_classes, l2_norm=False):
-    return FC2_Base(in_layer=77, num_classes=num_classes, l2_norm=l2_norm)
+    model = FC2_Base(in_layer=77, num_classes=num_classes, l2_norm=l2_norm)
+    model.apply(weight_init)
+    return model
