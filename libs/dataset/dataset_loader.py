@@ -134,3 +134,11 @@ class CICIDS2017DatasetFactory(IDatasetFactory):
         testset = CICIDS2017Dataset(test)
 
         return trainset, testset
+
+
+DATASETS_LOOKUP_TABLE = {
+        'CIFAR10': Cifar10DatasetFactory(),
+        'CIFAR100': Cifar100DatasetFactory(),
+        'Tiny-ImageNet': TinyImageNetDatasetFactory(),
+        'CICIDS2017': CICIDS2017DatasetFactory()
+    }

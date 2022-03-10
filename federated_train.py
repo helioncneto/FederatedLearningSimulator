@@ -1,5 +1,6 @@
 from args_dir.federated import args
-from libs.dataset.dataset_loader import *
+import libs.dataset.dataset_loader as dataset_loader
+from libs.methods.method_factory import GlobalBaseAggregationFactory
 
 import torch
 import numpy as np
@@ -54,23 +55,17 @@ def main():
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    factory_lookup_table = {
-        'CIFAR10': Cifar10DatasetFactory(),
-        'CIFAR100': Cifar100DatasetFactory(),
-        'Tiny-ImageNet': TinyImageNetDatasetFactory(),
-        'CICIDS2017': CICIDS2017DatasetFactory()
-    }
-
     # Build Dataset
     try:
-        factory = factory_lookup_table[args.set]
-        trainset, testset = factory.get_dataset()
+        dataset_factory = dataset_loader.DATASETS_LOOKUP_TABLE[args.set]
+        trainset, testset = dataset_factory.get_dataset()
         # trainloader = DataLoader(trainset, batch_size=args.batch_size,
         #                                          shuffle=True, num_workers=args.workers)
         testloader = DataLoader(testset, batch_size=args.batch_size,
                                                  shuffle=False, num_workers=args.workers)
         LocalUpdate = build_local_update_module(args)
-        global_update = build_global_update_module(args)
+        #global_update = build_global_update_module(args)
+        global_update = GlobalBaseAggregationFactory().get_global_method()
         global_update(args=args, device=device, trainset=trainset, testloader=testloader, LocalUpdate=LocalUpdate)
     except KeyError:
         print("The chosen dataset is not valid.\n")
