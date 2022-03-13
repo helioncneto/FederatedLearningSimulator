@@ -3,7 +3,7 @@ import torch.optim as optim
 import torch
 import torch.nn as nn
 
-__all__ = ['l2norm','get_numclasses','count_label_distribution','check_data_distribution','check_data_distribution_aug','feature_extractor','classifier','get_model', 'get_optimizer', 'get_scheduler']
+__all__ = ['l2norm','count_label_distribution','check_data_distribution','check_data_distribution_aug','feature_extractor','classifier','get_model', 'get_optimizer', 'get_scheduler']
 
 
 def l2norm(x,y):
@@ -70,23 +70,24 @@ def check_data_distribution_aug(dataloader,class_num:int=10,default_dist:torch.t
 
 
 # TODO: Hardcoded Change it
-def get_numclasses(args):
-    if args.set in ['CIFAR10',"MNIST"]:
+'''def get_numclasses(dataset: str) -> int:
+    if dataset in ['CIFAR10', "MNIST"]:
         num_classes = 10
-    elif args.set in ["CIFAR100"]:
+    elif dataset in ["CIFAR100"]:
         num_classes = 100
-    elif args.set in ["Tiny-ImageNet"]:
+    elif dataset in ["Tiny-ImageNet"]:
         num_classes = 200
-    elif args.set in ["CICIDS2017"]:
+    elif dataset in ["CICIDS2017"]:
         num_classes = 2
     else:
         raise Exception("The dataset specified is not available")
-    return num_classes
+    return num_classes'''
 
-def get_model(args):
-    num_classes = get_numclasses(args)
-    print("=> Creating model '{}'".format(args.arch))
-    model = models.__dict__[args.arch](num_classes=num_classes, l2_norm=args.l2_norm)
+
+def get_model(arch, num_classes, l2_norm):
+    #num_classes = get_numclasses(args)
+    print("=> Creating model '{}'".format(arch))
+    model = models.__dict__[arch](num_classes=num_classes, l2_norm=l2_norm)
     return model
 
 

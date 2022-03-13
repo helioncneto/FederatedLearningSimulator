@@ -4,10 +4,9 @@ from torch.utils.data import DataLoader
 from utils import DatasetSplit
 import torch
 import copy
-from utils.helper import get_numclasses
 
 
-class LocalUpdate(object):
+class LocalUpdate:
     """
     Local training for FedAGM
     """

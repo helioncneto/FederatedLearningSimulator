@@ -2,10 +2,12 @@ import os
 from abc import ABC, abstractmethod
 from sklearn.model_selection import train_test_split
 import torchvision
+import pandas as pd
+import numpy as np
 
 import datasets as local_datasets
 from args_dir.federated import args
-from libs.dataset.cicids import *
+from libs.dataset import cicids
 
 
 class IDatasetFactory(ABC):
@@ -20,8 +22,8 @@ class TransformHelper:
     @staticmethod
     def get_cifar_transform():
         normalize = torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465),
-                                         (0.2470, 0.2435, 0.2616)) if args.set == 'CIFAR10' else transforms.Normalize(
-            (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+                                         (0.2470, 0.2435, 0.2616)) if args.set == 'CIFAR10' else \
+            torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
 
         transform_train = torchvision.transforms.Compose(
             [torchvision.transforms.RandomRotation(10),
@@ -110,16 +112,16 @@ class CICIDS2017DatasetFactory(IDatasetFactory):
                 if os.stat(cic_ids_path).st_size < 1474940000:
                     print("[WARN] Somthing happend while downloading CICIDS2017")
                     [os.remove(os.path.join(files_path, cur_file)) for cur_file in os.listdir(files_path)]
-                    download_cicids2017(path=files_path)
-                    create_cic_ids_file()
+                    cicids.download_cicids2017(path=files_path)
+                    cicids.create_cic_ids_file()
             else:
                 print("CICIDS2017 file not exists.")
-                download_cicids2017(path=files_path)
-                create_cic_ids_file()
+                cicids.download_cicids2017(path=files_path)
+                cicids.create_cic_ids_file()
         else:
             os.mkdir(files_path)
-            download_cicids2017(path=files_path)
-            create_cic_ids_file()
+            cicids.download_cicids2017(path=files_path)
+            cicids.create_cic_ids_file()
 
         print('Loading CICIDS2017 file...')
         data = pd.read_csv(cic_ids_path)
@@ -130,8 +132,8 @@ class CICIDS2017DatasetFactory(IDatasetFactory):
         data.dropna(inplace=True)
 
         train, test = train_test_split(data, test_size=0.3)
-        trainset = CICIDS2017Dataset(train)
-        testset = CICIDS2017Dataset(test)
+        trainset = cicids.CICIDS2017Dataset(train)
+        testset = cicids.CICIDS2017Dataset(test)
 
         return trainset, testset
 
@@ -142,3 +144,10 @@ DATASETS_LOOKUP_TABLE = {
         'Tiny-ImageNet': TinyImageNetDatasetFactory(),
         'CICIDS2017': CICIDS2017DatasetFactory()
     }
+
+NUM_CLASSES_LOOKUP_TABLE = {
+        'CIFAR10': 10,
+        'CIFAR100': 100,
+        'Tiny-ImageNet': 200,
+        'CICIDS2017': 2
+}

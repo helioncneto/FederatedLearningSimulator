@@ -20,7 +20,7 @@ from utils import calculate_delta_cv,calculate_delta_variance, calculate_diverge
 from utils import CenterUpdate
 from utils import *
 
-def GlobalUpdate(args, device, trainset, testloader, LocalUpdate):
+def GlobalUpdate(args, device, trainset, testloader, local_update):
     model = get_model(args)
     model.to(device)
     wandb.watch(model)
@@ -65,9 +65,9 @@ def GlobalUpdate(args, device, trainset, testloader, LocalUpdate):
 
         for user in selected_user:
             num_of_data_clients.append(len(dataset[user]))
-            local_setting = LocalUpdate(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                        batch_size=args.batch_size, dataset=trainset, idxs=dataset[user],
-                                        alpha=this_alpha, local_deltas=local_deltas)
+            local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
+                                         batch_size=args.batch_size, dataset=trainset, idxs=dataset[user],
+                                         alpha=this_alpha, local_deltas=local_deltas)
             weight, loss = local_setting.train(net=copy.deepcopy(model).to(device), user=user)
             local_K.append(local_setting.K)
 

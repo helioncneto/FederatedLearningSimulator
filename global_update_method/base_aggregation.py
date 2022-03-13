@@ -4,60 +4,52 @@
 # In[2]:
 
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
-import wandb
 import numpy as np
-from torch import nn
-import copy
-import torch
-from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
-from utils import DatasetSplit
-from global_update_method.distcheck import check_data_distribution
-import umap.umap_ as umap
-from mpl_toolkits import mplot3d
-from sklearn import metrics
-from mlxtend.plotting import plot_confusion_matrix
-from torch.utils.data import DataLoader
-from utils import log_ConfusionMatrix_Umap, log_acc
-from utils import calculate_delta_cv,calculate_delta_variance, calculate_divergence_from_optimal,calculate_divergence_from_center
-from utils import CenterUpdate
 from utils import *
+from libs.dataset.dataset_loader import NUM_CLASSES_LOOKUP_TABLE
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 
-def GlobalUpdate(args,device,trainset,testloader,LocalUpdate):
-    model = get_model(args)
+def GlobalUpdate(args, device, trainset, testloader, local_update):
+    model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
+                      l2_norm=args.l2_norm)
     model.to(device)
     wandb.watch(model)
     model.train()
-    oneclass = True if get_numclasses(args) <= 1 else False
+    oneclass = True if NUM_CLASSES_LOOKUP_TABLE[args.set] <= 1 else False
 
     dataset = get_dataset(args, trainset, args.mode)
     loss_train = []
     acc_train = []
     this_lr = args.lr
     this_alpha = args.alpha
-    m = max(int(args.participation_rate * args.num_of_clients), 1)
+    selected_participants_num = max(int(args.participation_rate * args.num_of_clients), 1)
+    selected_participants = None
     for epoch in range(args.global_epochs):
-        wandb_dict={}
-        num_of_data_clients=[]
+        wandb_dict = {}
+        num_of_data_clients = []
         local_weight = []
         local_loss = []
         local_delta = []
         global_weight = copy.deepcopy(model.state_dict())
 
         # Sample participating agents for this global round
-        if (epoch == 0) or (args.participation_rate < 1):
-            selected_user = np.random.choice(range(args.num_of_clients), m, replace=False)
-        else:
-            pass 
-        print(f"This is global {epoch} epoch")
 
-        for user in selected_user:
-            num_of_data_clients.append(len(dataset[user]))
-            local_setting = LocalUpdate(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                        batch_size=args.batch_size, dataset=trainset, idxs=dataset[user], alpha=this_alpha)
+        if epoch == 0 or args.participation_rate < 1:
+            selected_participants = np.random.choice(range(args.num_of_clients),
+                                                     selected_participants_num,
+                                                     replace=False)
+
+        print(f"This is global {epoch} epoch")
+        if selected_participants is None:
+            return
+
+        for participant in selected_participants:
+            num_of_data_clients.append(len(dataset[participant]))
+            local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
+                                         batch_size=args.batch_size, dataset=trainset, idxs=dataset[participant],
+                                         alpha=this_alpha)
             weight, loss = local_setting.train(net=copy.deepcopy(model).to(device))
             local_weight.append(copy.deepcopy(weight))
             local_loss.append(copy.deepcopy(loss))
@@ -66,7 +58,7 @@ def GlobalUpdate(args,device,trainset,testloader,LocalUpdate):
                 delta[key] = weight[key] - global_weight[key]
             local_delta.append(delta)
 
-        total_num_of_data_clients=sum(num_of_data_clients)
+        total_num_of_data_clients = sum(num_of_data_clients)
         FedAvg_weight = copy.deepcopy(local_weight[0])
         for key in FedAvg_weight.keys():
             for i in range(len(local_weight)):
@@ -79,7 +71,7 @@ def GlobalUpdate(args,device,trainset,testloader,LocalUpdate):
 
         loss_avg = sum(local_loss) / len(local_loss)
         print(' num_of_data_clients : ', num_of_data_clients)
-        print(' Participants IDS: ', selected_user)
+        print(' Participants IDS: ', selected_participants)
         print(' Average loss {:.3f}'.format(loss_avg))
         loss_train.append(loss_avg)
 
@@ -103,13 +95,13 @@ def GlobalUpdate(args,device,trainset,testloader,LocalUpdate):
             acc_train.append(100 * correct / float(total))
 
         model.train()
-        wandb_dict[args.mode + "_acc"]=acc_train[-1]
-        wandb_dict[args.mode + '_loss']= loss_avg
-        wandb_dict['lr']=this_lr
+        wandb_dict[args.mode + "_acc"] = acc_train[-1]
+        wandb_dict[args.mode + '_loss'] = loss_avg
+        wandb_dict['lr'] = this_lr
         wandb.log(wandb_dict)
 
         this_lr *= args.learning_rate_decay
-        if args.alpha_mul_epoch == True:
+        if args.alpha_mul_epoch:
             this_alpha = args.alpha * (epoch + 1)
-        elif args.alpha_divide_epoch == True:
+        elif args.alpha_divide_epoch:
             this_alpha = args.alpha / (epoch + 1)
