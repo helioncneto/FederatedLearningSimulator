@@ -1,7 +1,4 @@
-#!/usr/bin/env python
 # coding: utf-8
-
-# In[2]:
 
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import numpy as np

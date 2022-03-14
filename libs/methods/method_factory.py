@@ -1,16 +1,8 @@
 from abc import ABC, abstractmethod
-import global_update_method.base_aggregation as base_aggregation
-import global_update_method.delta_aggregation_slowmo as delta_aggregation_slowmo
-import global_update_method.adam_aggregation as adam_aggregation
-import global_update_method.delta_aggregation as delta_aggregation
-import global_update_method.delta_aggregation_fedDyn as delta_aggregation_fedDyn
-import global_update_method.delta_aggregation_AGM as delta_aggregation_AGM
+from global_update_method import base_aggregation, delta_aggregation_slowmo, adam_aggregation, delta_aggregation, \
+    delta_aggregation_fedDyn, delta_aggregation_AGM, base_aggregation_fedSA
 
-import local_update_method.base as base
-import local_update_method.weight_l2 as weight_l2
-import local_update_method.fedCM as fedCM
-import local_update_method.fedDyn as fedDyn
-import local_update_method.fedAGM as fedAGM
+from local_update_method import base, weight_l2, fedCM, fedDyn, fedAGM
 
 
 class IGlobalMethodFactory(ABC):
@@ -71,6 +63,13 @@ class GlobalDeltaAggregationFedAGMFactory(IGlobalMethodFactory):
         return delta_aggregation_AGM.GlobalUpdate
 
 
+class GlobalBaseAggregationFedSAFactory(IGlobalMethodFactory):
+    """Method for returning the FedSA global aggregation method"""
+
+    def get_global_method(self):
+        return base_aggregation_fedSA.GlobalUpdate
+
+
 class LocalBaseFactory(ILocalMethodFactory):
     """Method for returning the FedAVG local update method"""
 
@@ -119,7 +118,8 @@ GLOBALAGGREGATION_LOOKUP_TABLE = {'base_avg': GlobalBaseAggregationFactory(),
                                   'global_adam': GlobalAdamAggregationFactory(),
                                   'global_delta': GlobalDeltaAggregationFactory(),
                                   'FedDyn': GlobalDeltaAggregationFedDynFactory(),
-                                  'FedAGM':  GlobalDeltaAggregationFedAGMFactory()
+                                  'FedAGM':  GlobalDeltaAggregationFedAGMFactory(),
+                                  'FedSA':  GlobalBaseAggregationFedSAFactory()
                                   }
 
 if __name__ == "__main__":
