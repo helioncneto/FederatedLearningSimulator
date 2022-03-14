@@ -58,8 +58,8 @@ def main():
     try:
         dataset_factory = dataset_loader.DATASETS_LOOKUP_TABLE[args.set]
     except KeyError:
-        print("The chosen dataset is not valid.")
-        print("Valid datasets: CIFAR10, CIFAR100, Tiny-ImageNet, and CICIDS2017")
+        print('The chosen dataset is not valid.')
+        print(f'Valid datasets: {list(dataset_loader.DATASETS_LOOKUP_TABLE.keys())}')
     if dataset_factory is not None:
         global_update, local_update = None, None
 
@@ -69,13 +69,13 @@ def main():
         try:
             local_update = LOCALUPDATE_LOOKUP_TABLE[args.method].get_local_method()
         except KeyError:
-            print("The chosen method is not valid.")
-            print("Valid methods: Fedavg, FedProx, FedCM, FedDyn, and FedAGM")
+            print('The chosen method is not valid.')
+            print(f'Valid methods: {list(LOCALUPDATE_LOOKUP_TABLE.keys())}')
         try:
             global_update = GLOBALAGGREGATION_LOOKUP_TABLE[args.global_method].get_global_method()
         except KeyError:
-            print("The chosen global method is not valid.")
-            print("Valid global methods: base_avg, SlowMo, global_adam, global_delta, FedDyn, and FedAGM")
+            print('The chosen global method is not valid.')
+            print(f'Valid global methods: {list(GLOBALAGGREGATION_LOOKUP_TABLE.keys())}')
         if global_update is not None and local_update is not None:
             global_update(args=args, device=device, trainset=trainset, testloader=testloader,
                           local_update=local_update)
