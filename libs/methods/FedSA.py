@@ -2,17 +2,9 @@ import time
 import random
 import math
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
-import tensorflow as tf
-import sys
+#import matplotlib.pyplot as plt
 import warnings
-from keras.layers import Dense, Dropout
-from keras.metrics import Precision, Recall, Accuracy
-from keras.regularizers import l2
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, precision_score
+
 
 warnings.simplefilter("ignore")
 
@@ -205,9 +197,9 @@ class SimulatedAnnealing:
                 # break
         # self.save_model('proposta', model)
 
-    def plot(self):
+    '''def plot(self):
         plt.plot(self.record_best_fitness)
-        plt.show()
+        plt.show()'''
 
     def save(self, name="name"):
 
