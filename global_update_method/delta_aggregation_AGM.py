@@ -1,31 +1,13 @@
-#!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
-
-from utils import get_scheduler, get_optimizer, get_model, get_dataset
-import wandb
+from libs.dataset.dataset_loader import NUM_CLASSES_LOOKUP_TABLE
 import numpy as np
-from torch import nn
-import copy
-import torch
-from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
-from utils import DatasetSplit
-from global_update_method.distcheck import check_data_distribution
-import umap.umap_ as umap
-from mpl_toolkits import mplot3d
-from sklearn import metrics
-from mlxtend.plotting import plot_confusion_matrix
-from torch.utils.data import DataLoader
-from utils import log_ConfusionMatrix_Umap, log_acc
-from utils import calculate_delta_cv,calculate_delta_variance, calculate_divergence_from_optimal,calculate_divergence_from_center
-from utils import CenterUpdate
 from utils import *
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update):
-    model = get_model(args)
+    model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
+                      l2_norm=args.l2_norm)
     model.to(device)
     wandb.watch(model)
     model.train()
