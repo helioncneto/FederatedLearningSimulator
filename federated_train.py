@@ -16,7 +16,7 @@ def init_env():
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_device)
 
-    experiment_name = args.set + "_" + args.mode + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else "") + "_" + \
+    experiment_name = args.set + "_" + args.global_method  + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else "") + "_" + \
                       args.method + ("_" + args.additional_experiment_name if args.additional_experiment_name != ''
                                      else '')
     group_name = args.mode + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else "")
