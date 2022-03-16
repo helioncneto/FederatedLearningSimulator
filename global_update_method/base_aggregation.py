@@ -82,7 +82,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
             #total = 0
             accuracy = 0
             with torch.no_grad():
-                for x, labels  in testloader:
+                for x, labels in testloader:
                     x, labels = x.to(device), labels.to(device)
                     outputs = model(x)
                     '''if oneclass:
