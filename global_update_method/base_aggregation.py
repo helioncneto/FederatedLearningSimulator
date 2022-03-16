@@ -83,7 +83,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
             accuracy = 0
             with torch.no_grad():
                 for x, labels in testloader:
+                    print('loading data from testloader')
                     x, labels = x.to(device), labels.to(device)
+                    print('sending to the model')
                     outputs = model(x)
                     '''if oneclass:
                         predicted = torch.from_numpy(np.array([1 if i > 0.5 else 0 for i in outputs]))
@@ -91,10 +93,13 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
                         _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
                     correct += (predicted == labels).sum().item()'''
+                    print('checking the classes')
                     top_p, top_class = outputs.topk(1, dim=1)
+                    print('evaluating the correctness')
                     equals = top_class == labels.view(*top_class.shape)
+                    print('calculating accuracy')
                     accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
-
+            print('calculating avg accuracy')
             accuracy = accuracy / len(testloader)
             accuracy *= 100
             print('Accuracy of the network on the 10000 test images: %f %%' % accuracy)
@@ -104,8 +109,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
         wandb_dict[args.mode + "_acc"] = acc_train[-1]
         wandb_dict[args.mode + '_loss'] = loss_avg
         wandb_dict['lr'] = this_lr
+        print('logging to wandb...')
         wandb.log(wandb_dict)
-
+        print('Decay LR...')
         this_lr *= args.learning_rate_decay
         if args.alpha_mul_epoch:
             this_alpha = args.alpha * (epoch + 1)
