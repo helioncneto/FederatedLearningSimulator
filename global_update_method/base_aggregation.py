@@ -85,7 +85,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
                 for x, labels in testloader:
                     print('loading data from testloader')
                     x, labels = x.to(device), labels.to(device)
-                    print('sending to the model')
+                    print('sending to the model..')
                     outputs = model(x)
                     '''if oneclass:
                         predicted = torch.from_numpy(np.array([1 if i > 0.5 else 0 for i in outputs]))
