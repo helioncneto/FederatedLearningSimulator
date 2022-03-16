@@ -83,9 +83,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
             accuracy = 0
             with torch.no_grad():
                 for x, labels in testloader:
-                    print('loading data from testloader')
+                    #print('loading data from testloader')
                     x, labels = x.to(device), labels.to(device)
-                    print('sending to the model..')
+                    #print('sending to the model..')
                     outputs = model(x)
                     '''if oneclass:
                         predicted = torch.from_numpy(np.array([1 if i > 0.5 else 0 for i in outputs]))
@@ -93,11 +93,11 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
                         _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
                     correct += (predicted == labels).sum().item()'''
-                    print('checking the classes')
+                    #print('checking the classes')
                     top_p, top_class = outputs.topk(1, dim=1)
-                    print('evaluating the correctness')
+                    #print('evaluating the correctness')
                     equals = top_class == labels.view(*top_class.shape)
-                    print('calculating accuracy')
+                    #print('calculating accuracy')
                     accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
             print('calculating avg accuracy')
             accuracy = accuracy / len(testloader)
