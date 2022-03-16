@@ -119,10 +119,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
 
 
                     loss = args.alpha * ce_loss + 0.5 * args.mu * reg_loss
-                    if isCICIDS2017:
-                        predicted = torch.from_numpy(np.array([1 if i > 0.5 else 0 for i in outputs]))
-                    else:
-                        _, predicted = torch.max(outputs.data, 1)
+                    _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
                     #print(f'Pred: {predicted} \n l=Label:{labels}')
                     correct += (predicted == labels).sum().item()
