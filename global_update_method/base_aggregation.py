@@ -78,22 +78,27 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
         if epoch % args.print_freq == 0:
             print('performing the evaluation')
             model.eval()
-            correct = 0
-            total = 0
+            #correct = 0
+            #total = 0
+            accuracy = 0
             with torch.no_grad():
-                for data in testloader:
-                    x, labels = data[0].to(device), data[1].to(device)
+                for x, labels  in testloader:
+                    x, labels = x.to(device), labels.to(device)
                     outputs = model(x)
-                    if oneclass:
+                    '''if oneclass:
                         predicted = torch.from_numpy(np.array([1 if i > 0.5 else 0 for i in outputs]))
                     else:
                         _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
-                    correct += (predicted == labels).sum().item()
+                    correct += (predicted == labels).sum().item()'''
+                    top_p, top_class = outputs.topk(1, dim=1)
+                    equals = top_class == labels.view(*top_class.shape)
+                    accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
 
-            print('Accuracy of the network on the 10000 test images: %f %%' % (
-                    100 * correct / float(total)))
-            acc_train.append(100 * correct / float(total))
+            accuracy = accuracy / len(testloader)
+            accuracy *= 100
+            print('Accuracy of the network on the 10000 test images: %f %%' % accuracy)
+            acc_train.append(accuracy)
 
         model.train()
         wandb_dict[args.mode + "_acc"] = acc_train[-1]
