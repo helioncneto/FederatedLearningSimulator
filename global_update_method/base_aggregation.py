@@ -24,6 +24,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
     selected_participants_num = max(int(args.participation_rate * args.num_of_clients), 1)
     selected_participants = None
     for epoch in range(args.global_epochs):
+        print('starting a new epoch')
         wandb_dict = {}
         num_of_data_clients = []
         local_weight = []
@@ -34,6 +35,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
         # Sample participating agents for this global round
 
         if epoch == 0 or args.participation_rate < 1:
+            print('Selecting the participants')
             selected_participants = np.random.choice(range(args.num_of_clients),
                                                      selected_participants_num,
                                                      replace=False)
@@ -42,6 +44,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
         if selected_participants is None:
             return
 
+        print('Training participants')
         for participant in selected_participants:
             num_of_data_clients.append(len(dataset[participant]))
             local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
@@ -73,6 +76,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
         loss_train.append(loss_avg)
 
         if epoch % args.print_freq == 0:
+            print('performing the evaluation')
             model.eval()
             correct = 0
             total = 0
