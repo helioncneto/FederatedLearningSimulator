@@ -3,7 +3,7 @@
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import numpy as np
 from utils import *
-from libs.dataset.dataset_loader import NUM_CLASSES_LOOKUP_TABLE
+from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
@@ -12,7 +12,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
-    wandb.watch(model)
+    ##wandb.watch(model)
     model.train()
     oneclass = True if NUM_CLASSES_LOOKUP_TABLE[args.set] <= 1 else False
 
@@ -109,8 +109,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
         wandb_dict[args.mode + "_acc"] = acc_train[-1]
         wandb_dict[args.mode + '_loss'] = loss_avg
         wandb_dict['lr'] = this_lr
-        print('logging to wandb...')
-        wandb.log(wandb_dict)
+        ##print('logging to wandb...')
+        ##wandb.log(wandb_dict)
         print('Decay LR...')
         this_lr *= args.learning_rate_decay
         if args.alpha_mul_epoch:

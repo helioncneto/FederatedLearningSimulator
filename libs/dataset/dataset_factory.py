@@ -7,7 +7,7 @@ import numpy as np
 
 import datasets as local_datasets
 from args_dir.federated import args
-from libs.dataset import cicids
+from libs.dataset import cicids_dataset
 
 
 class IDatasetFactory(ABC):
@@ -131,7 +131,7 @@ class CICIDS2017DatasetFactory(IDatasetFactory):
         data = data.replace(np.inf, 1.7976931348623157e+301).replace(-np.inf, -1.7976931348623157e+301)
         data.dropna(inplace=True)
 
-        train, test = train_test_split(data, test_size=0.3)
+        train, test = train_test_split(data, test_size=args.test_size)
         trainset = cicids.CICIDS2017Dataset(train)
         testset = cicids.CICIDS2017Dataset(test)
 

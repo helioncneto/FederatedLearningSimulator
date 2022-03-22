@@ -1,5 +1,5 @@
 from args_dir.federated import args
-import libs.dataset.dataset_loader as dataset_loader
+import libs.dataset.dataset_factory as dataset_loader
 from libs.methods.method_factory import LOCALUPDATE_LOOKUP_TABLE, GLOBALAGGREGATION_LOOKUP_TABLE
 
 import torch
@@ -26,11 +26,11 @@ def init_env():
     wandb_log_dir = os.path.join('data1/fed/actreg/wandb', experiment_name)
     if not os.path.exists('{}'.format(wandb_log_dir)):
         os.makedirs('{}'.format(wandb_log_dir))
-    wandb.init(entity=args.entity, project=args.project,
-               group=group_name, job_type=job_type, dir=wandb_log_dir)
-    wandb.run.name = experiment_name
-    wandb.run.save()
-    wandb.config.update(args)
+    ##wandb.init(entity=args.entity, project=args.project,
+               ##group=group_name, job_type=job_type, dir=wandb_log_dir)
+    ##wandb.run.name = experiment_name
+    ##wandb.run.save()
+    ##wandb.config.update(args)
 
     random_seed = args.seed
     torch.manual_seed(random_seed)

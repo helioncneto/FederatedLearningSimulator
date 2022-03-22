@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from libs.dataset.dataset_loader import NUM_CLASSES_LOOKUP_TABLE
+from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 import numpy as np
 from utils import *
 

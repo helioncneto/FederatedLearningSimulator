@@ -534,6 +534,13 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--test_size",
+        default=0.3,
+        type=float,
+        help="The size of the test set",
+    )
+
+    parser.add_argument(
         "--g2",
         default=1,
         type=float,

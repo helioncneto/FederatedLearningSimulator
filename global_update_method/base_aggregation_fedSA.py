@@ -5,7 +5,7 @@ import wandb
 import copy
 import torch
 #from utils import *
-from libs.dataset.dataset_loader import NUM_CLASSES_LOOKUP_TABLE
+from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 

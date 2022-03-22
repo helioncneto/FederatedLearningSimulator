@@ -2,10 +2,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from utils import DatasetSplit,IL,IL_negsum
 from local_update_method.global_and_online_model import *
-from libs.dataset.dataset_loader import NUM_CLASSES_LOOKUP_TABLE
+from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 
 
-class LocalUpdate(object):
+class LocalUpdate:
     """
     Base local training
     Local objective function contains only local loss function.

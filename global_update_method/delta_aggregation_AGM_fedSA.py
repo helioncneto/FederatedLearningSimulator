@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from libs.dataset.dataset_loader import NUM_CLASSES_LOOKUP_TABLE
+from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 
 from libs.methods.FedSA import SimulatedAnnealing
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
