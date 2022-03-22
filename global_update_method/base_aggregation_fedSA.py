@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from libs.methods.FedSA import SimulatedAnnealing
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
-import numpy as np
 import wandb
 import copy
 import torch
