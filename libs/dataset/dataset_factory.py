@@ -112,16 +112,16 @@ class CICIDS2017DatasetFactory(IDatasetFactory):
                 if os.stat(cic_ids_path).st_size < 1474940000:
                     print("[WARN] Somthing happend while downloading CICIDS2017")
                     [os.remove(os.path.join(files_path, cur_file)) for cur_file in os.listdir(files_path)]
-                    cicids.download_cicids2017(path=files_path)
-                    cicids.create_cic_ids_file()
+                    cicids_dataset.download_cicids2017(path=files_path)
+                    cicids_dataset.create_cic_ids_file()
             else:
                 print("CICIDS2017 file not exists.")
-                cicids.download_cicids2017(path=files_path)
-                cicids.create_cic_ids_file()
+                cicids_dataset.download_cicids2017(path=files_path)
+                cicids_dataset.create_cic_ids_file()
         else:
             os.mkdir(files_path)
-            cicids.download_cicids2017(path=files_path)
-            cicids.create_cic_ids_file()
+            cicids_dataset.download_cicids2017(path=files_path)
+            cicids_dataset.create_cic_ids_file()
 
         print('Loading CICIDS2017 file...')
         data = pd.read_csv(cic_ids_path)
@@ -132,8 +132,8 @@ class CICIDS2017DatasetFactory(IDatasetFactory):
         data.dropna(inplace=True)
 
         train, test = train_test_split(data, test_size=args.test_size)
-        trainset = cicids.CICIDS2017Dataset(train)
-        testset = cicids.CICIDS2017Dataset(test)
+        trainset = cicids_dataset.CICIDS2017Dataset(train)
+        testset = cicids_dataset.CICIDS2017Dataset(test)
 
         return trainset, testset
 
