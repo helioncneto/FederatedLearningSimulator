@@ -23,9 +23,9 @@ def init_env():
     job_type = args.global_method + ("_" + args.additional_experiment_name if args.additional_experiment_name != '' else '')
     print("Running the experiment: ", experiment_name)
 
-    wandb_log_dir = os.path.join('data1/fed/actreg/wandb', experiment_name)
-    if not os.path.exists('{}'.format(wandb_log_dir)):
-        os.makedirs('{}'.format(wandb_log_dir))
+    ##wandb_log_dir = os.path.join('data1/fed/actreg/wandb', experiment_name)
+    ##if not os.path.exists('{}'.format(wandb_log_dir)):
+    ##    os.makedirs('{}'.format(wandb_log_dir))
     ##wandb.init(entity=args.entity, project=args.project,
                ##group=group_name, job_type=job_type, dir=wandb_log_dir)
     ##wandb.run.name = experiment_name
