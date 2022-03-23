@@ -12,7 +12,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
-    ##wandb.watch(model)
+    wandb.watch(model)
     model.train()
     oneclass = True if NUM_CLASSES_LOOKUP_TABLE[args.set] <= 1 else False
 
@@ -87,12 +87,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
                     x, labels = x.to(device), labels.to(device)
                     #print('sending to the model..')
                     outputs = model(x)
-                    '''if oneclass:
-                        predicted = torch.from_numpy(np.array([1 if i > 0.5 else 0 for i in outputs]))
-                    else:
-                        _, predicted = torch.max(outputs.data, 1)
-                    total += labels.size(0)
-                    correct += (predicted == labels).sum().item()'''
                     #print('checking the classes')
                     top_p, top_class = outputs.topk(1, dim=1)
                     #print('evaluating the correctness')
@@ -109,8 +103,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
         wandb_dict[args.mode + "_acc"] = acc_train[-1]
         wandb_dict[args.mode + '_loss'] = loss_avg
         wandb_dict['lr'] = this_lr
-        ##print('logging to wandb...')
-        ##wandb.log(wandb_dict)
+        print('logging to wandb...')
+        wandb.log(wandb_dict)
         print('Decay LR...')
         this_lr *= args.learning_rate_decay
         if args.alpha_mul_epoch:
