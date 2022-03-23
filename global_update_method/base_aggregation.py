@@ -14,7 +14,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
     model.to(device)
     wandb.watch(model)
     model.train()
-    oneclass = True if NUM_CLASSES_LOOKUP_TABLE[args.set] <= 1 else False
 
     dataset = get_dataset(args, trainset, args.mode)
     loss_train = []
@@ -94,8 +93,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
                     #print('calculating accuracy')
                     accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
             print('calculating avg accuracy')
-            accuracy = accuracy / len(testloader)
-            accuracy *= 100
+            accuracy = (accuracy / len(testloader)) * 100
             print('Accuracy of the network on the 10000 test images: %f %%' % accuracy)
             acc_train.append(accuracy)
 
