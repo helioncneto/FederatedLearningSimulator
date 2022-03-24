@@ -9,7 +9,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
-    wandb.watch(model)
+    if args.use_wandb:
+        wandb.watch(model)
     model.train()
     isCICIDS2017 = True if args.mode == "CICIDS2017" else False
 
@@ -140,7 +141,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
         
         wandb_dict[args.mode + '_loss']= loss_avg
         wandb_dict['lr']=this_lr
-        wandb.log(wandb_dict)
+        if args.use_wandb:
+            wandb.log(wandb_dict)
 
         this_lr *= args.learning_rate_decay
         this_tau *=args.server_learning_rate_decay

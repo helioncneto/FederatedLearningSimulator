@@ -25,7 +25,8 @@ from utils import CenterUpdate
 def GlobalUpdate(args, device, trainset, testloader, local_update):
     model = get_model(args)
     model.to(device)
-    wandb.watch(model)
+    if args.use_wandb:
+        wandb.watch(model)
     model.train()
     dataset = get_dataset(args, trainset, args.mode)
     loss_train = []
@@ -107,7 +108,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
         wandb_dict[args.mode + "_acc"]=acc_train[-1]
         wandb_dict[args.mode + '_loss']= loss_avg
         wandb_dict['lr']=this_lr
-        wandb.log(wandb_dict)
+        if args.use_wandb:
+            wandb.log(wandb_dict)
 
         this_lr *= args.learning_rate_decay
         if args.alpha_mul_epoch == True:

@@ -13,7 +13,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
-    wandb.watch(model)
+    if args.use_wandb:
+        wandb.watch(model)
     model.train()
 
     dataset = get_dataset(args, trainset, args.mode)
@@ -164,7 +165,8 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
 
     wandb_dict[args.mode + '_loss'] = loss_avg
     wandb_dict['lr'] = lr
-    wandb.log(wandb_dict)
+    if args.use_wandb:
+        wandb.log(wandb_dict)
 
     #this_tau *= args.server_learning_rate_decay
 

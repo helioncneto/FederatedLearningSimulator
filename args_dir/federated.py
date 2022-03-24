@@ -116,6 +116,11 @@ def parse_arguments():
         help="Whether or not to make new client dataset",
     )
     parser.add_argument(
+        "--use_wandb",
+        action="store_true",
+        help="Chose if you will sync with Weights and Bias",
+    )
+    parser.add_argument(
         "--config", help="Config file to use (see configs dir)", default=None
     )
     parser.add_argument(
