@@ -2,10 +2,23 @@
 
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import numpy as np
+import os
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+
+def save(path, metric):
+    exists = False
+    if os.path.exists(path):
+        if os.stat(path).st_size > 0:
+            exists = True
+    file = open(path, 'a')
+    if exists:
+        file.write(',')
+    file.write(str(metric))
+    file.close()
+
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update):
@@ -105,6 +118,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
         if args.use_wandb:
             print('logging to wandb...')
             wandb.log(wandb_dict)
+        else:
+            save(args.mode + "_acc", wandb_dict[args.mode + "_acc"] )
         print('Decay LR...')
         this_lr *= args.learning_rate_decay
         if args.alpha_mul_epoch:
