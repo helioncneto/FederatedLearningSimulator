@@ -58,7 +58,7 @@ class Evaluator:
             raise Exception
 
     def run_metrics(self, predicted, real) -> dict:
-        tn, fp, fn, tp = confusion_matrix(real, predicted)
+        tn, fp, fn, tp = confusion_matrix(real, predicted).ravel()
         results = {}
         for metric in self.metrics:
             metric = self.AVAILABLE_METRICS[metric]
