@@ -7,6 +7,7 @@ from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from libs.evaluation.metrics import Evaluator
 
+
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 def save(path, metric):
@@ -108,7 +109,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
                     top_p, top_class = outputs.topk(1, dim=1)
                     if first:
                         preds = top_class.numpy()
-                        full_lables = labels
+                        full_lables = copy.deepcopy(labels)
                         first = False
                     else:
                         preds = np.concatenate((preds, top_class.numpy()))
