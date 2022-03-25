@@ -122,6 +122,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
             print('calculating avg accuracy')
             evaluator = Evaluator('accuracy', 'precision')
             metrics = evaluator.run_metrics(preds, full_lables)
+            print(metrics)
             #accuracy = (accuracy / len(testloader)) * 100
             print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
             print('Precision of the network on the 10000 test images: %f %%' % metrics['precision'])
