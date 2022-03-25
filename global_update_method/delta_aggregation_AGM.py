@@ -1,9 +1,23 @@
 # coding: utf-8
+import os
 
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 import numpy as np
+
+from libs.evaluation.metrics import Evaluator
 from utils import *
 
+
+def save(path, metric):
+    exists = False
+    if os.path.exists(path):
+        if os.stat(path).st_size > 0:
+            exists = True
+    file = open(path, 'a')
+    if exists:
+        file.write(',')
+    file.write(str(metric))
+    file.close()
 
 def GlobalUpdate(args, device, trainset, testloader, local_update):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
@@ -104,13 +118,21 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
             reg_loss_test = []
             total_loss_test = []
             with torch.no_grad():
+                preds = np.array([])
+                full_lables = np.array([])
+                first = True
                 for data in testloader:
                     x, labels = data[0].to(device), data[1].to(device)
                     outputs = model(x)
-                    if isCICIDS2017:
-                        ce_loss = loss_func(outputs, labels.float())
+                    top_p, top_class = outputs.topk(1, dim=1)
+                    if first:
+                        preds = top_class.numpy()
+                        full_lables = copy.deepcopy(labels)
+                        first = False
                     else:
-                        ce_loss = loss_func(outputs, labels)
+                        preds = np.concatenate((preds, top_class.numpy()))
+                        full_lables = np.concatenate((full_lables, labels))
+                    ce_loss = loss_func(outputs, labels)
 
                     ## Weight L2 loss
                     reg_loss = 0
@@ -129,20 +151,33 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
                     reg_loss_test.append(reg_loss.item())
                     total_loss_test.append(loss.item())
 
-            print('Accuracy of the network on the 10000 test images: %f %%' % (
-                    100 * correct / float(total)))
-            acc_train.append(100 * correct / float(total))
+            print('calculating avg accuracy')
+            evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
+            metrics = evaluator.run_metrics(preds, full_lables)
+            # accuracy = (accuracy / len(testloader)) * 100
+            print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
+            print('Precision of the network on the 10000 test images: %f %%' % metrics['precision'])
+            print('Sensitivity of the network on the 10000 test images: %f %%' % metrics['sensitivity'])
+            print('Specificity of the network on the 10000 test images: %f %%' % metrics['specificity'])
+            print('F1-score of the network on the 10000 test images: %f %%' % metrics['f1score'])
 
             model.train()
-            wandb_dict[args.mode + "_acc"]=acc_train[-1]
-            wandb_dict[args.mode + "_total_loss"] = sum(total_loss_test) / len(total_loss_test)
-            wandb_dict[args.mode + "_ce_loss"] = sum(ce_loss_test) / len(ce_loss_test)
-            wandb_dict[args.mode + "_reg_loss"] = sum(reg_loss_test) / len(reg_loss_test)
-        
-        wandb_dict[args.mode + '_loss']= loss_avg
-        wandb_dict['lr']=this_lr
-        if args.use_wandb:
-            wandb.log(wandb_dict)
+            wandb_dict[args.mode + "_acc"] = metrics['accuracy']
+            wandb_dict[args.mode + "_prec"] = metrics['precision']
+            wandb_dict[args.mode + "_sens"] = metrics['sensitivity']
+            wandb_dict[args.mode + "_spec"] = metrics['specificity']
+            wandb_dict[args.mode + "_f1"] = metrics['f1score']
+            wandb_dict[args.mode + '_loss'] = loss_avg
+            wandb_dict['lr'] = this_lr
+            if args.use_wandb:
+                print('logging to wandb...')
+                wandb.log(wandb_dict)
+            save(args.mode + "_acc", wandb_dict[args.mode + "_acc"])
+            save(args.mode + "_prec", wandb_dict[args.mode + "_prec"])
+            save(args.mode + "_sens", wandb_dict[args.mode + "_sens"])
+            save(args.mode + "_spec", wandb_dict[args.mode + "_spec"])
+            save(args.mode + "_f1", wandb_dict[args.mode + "_f1"])
+            save(args.mode + "_loss", wandb_dict[args.mode + "_loss"])
 
         this_lr *= args.learning_rate_decay
         this_tau *=args.server_learning_rate_decay

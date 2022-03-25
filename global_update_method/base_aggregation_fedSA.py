@@ -4,8 +4,22 @@ from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import wandb
 import copy
 import torch
+import numpy as np
 #from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
+from libs.evaluation.metrics import Evaluator
+import os
+
+def save(path, metric):
+    exists = False
+    if os.path.exists(path):
+        if os.stat(path).st_size > 0:
+            exists = True
+    file = open(path, 'a')
+    if exists:
+        file.write(',')
+    file.write(str(metric))
+    file.close()
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
@@ -93,21 +107,62 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     correct = 0
     total = 0
     with torch.no_grad():
-        for data in testloader:
-            x, labels = data[0].to(device), data[1].to(device)
+        preds = np.array([])
+        full_lables = np.array([])
+        first = True
+        for x, labels in testloader:
+            # print('loading data from testloader')
+            x, labels = x.to(device), labels.to(device)
+            # print('sending to the model..')
             outputs = global_model(x)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+            # print('checking the classes')
+            top_p, top_class = outputs.topk(1, dim=1)
+            if first:
+                preds = top_class.numpy()
+                full_lables = copy.deepcopy(labels)
+                first = False
+            else:
+                preds = np.concatenate((preds, top_class.numpy()))
+                full_lables = np.concatenate((full_lables, labels))
 
-    print('Accuracy of the network: %f %%' % (
-            100 * correct / float(total)))
-    acc_train.append(100 * correct / float(total))
+            # print('evaluating the correctness')
+            # equals = top_class == labels.view(*top_class.shape)
+            # print('calculating accuracy')
+            # accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
+
+    print('calculating avg accuracy')
+    evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
+    metrics = evaluator.run_metrics(preds, full_lables)
+    # accuracy = (accuracy / len(testloader)) * 100
+    print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
+    print('Precision of the network on the 10000 test images: %f %%' % metrics['precision'])
+    print('Sensitivity of the network on the 10000 test images: %f %%' % metrics['sensitivity'])
+    print('Specificity of the network on the 10000 test images: %f %%' % metrics['specificity'])
+    print('F1-score of the network on the 10000 test images: %f %%' % metrics['f1score'])
+    # acc_train.append(accuracy)
+
 
     global_model.train()
-    wandb_dict[args.mode + "_acc"] = acc_train[-1]
+    wandb_dict[args.mode + "_acc"] = metrics['accuracy']
+    wandb_dict[args.mode + "_prec"] = metrics['precision']
+    wandb_dict[args.mode + "_sens"] = metrics['sensitivity']
+    wandb_dict[args.mode + "_spec"] = metrics['specificity']
+    wandb_dict[args.mode + "_f1"] = metrics['f1score']
     wandb_dict[args.mode + '_loss'] = loss_avg
     wandb_dict['lr'] = lr
     if args.use_wandb:
+        print('logging to wandb...')
         wandb.log(wandb_dict)
-    return global_model, loss_avg, acc_train[-1]
+    save(args.mode + "_acc", wandb_dict[args.mode + "_acc"])
+    save(args.mode + "_prec", wandb_dict[args.mode + "_prec"])
+    save(args.mode + "_sens", wandb_dict[args.mode + "_sens"])
+    save(args.mode + "_spec", wandb_dict[args.mode + "_spec"])
+    save(args.mode + "_f1", wandb_dict[args.mode + "_f1"])
+    save(args.mode + "_loss", wandb_dict[args.mode + "_loss"])
+
+    if args.alpha_mul_epoch:
+        this_alpha = args.alpha * (epoch + 1)
+    elif args.alpha_divide_epoch:
+        this_alpha = args.alpha / (epoch + 1)
+
+    return global_model, loss_avg, metrics['accuracy']

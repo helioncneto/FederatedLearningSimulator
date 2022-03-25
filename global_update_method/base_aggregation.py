@@ -120,7 +120,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
                     #print('calculating accuracy')
                     #accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
             print('calculating avg accuracy')
-            evaluator = Evaluator('accuracy', 'precision')
+            evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
             metrics = evaluator.run_metrics(preds, full_lables)
             #accuracy = (accuracy / len(testloader)) * 100
             print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
