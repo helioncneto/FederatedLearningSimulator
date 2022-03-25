@@ -12,7 +12,7 @@ class Accuracy:
     @staticmethod
     def calculate(conf_matrix: tuple) -> float:
         tn, fp, fn, tp = conf_matrix
-        return (tp + tn) / (tp + tn + fp, fn)
+        return (tp + tn) / (tp + tn + fp + fn)
 
 
 class Precision:
