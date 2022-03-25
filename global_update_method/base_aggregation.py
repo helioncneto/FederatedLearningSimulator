@@ -109,6 +109,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
                     if first:
                         preds = top_class.numpy()
                         full_lables = labels
+                        first = False
                     else:
                         preds = np.concatenate((preds, top_class.numpy()))
                         full_lables = np.concatenate((full_lables, labels))
