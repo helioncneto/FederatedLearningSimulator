@@ -98,6 +98,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
             with torch.no_grad():
                 preds = np.array([])
                 full_lables = np.array([])
+                first = True
                 for x, labels in testloader:
                     #print('loading data from testloader')
                     x, labels = x.to(device), labels.to(device)
@@ -105,8 +106,12 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
                     outputs = model(x)
                     #print('checking the classes')
                     top_p, top_class = outputs.topk(1, dim=1)
-                    preds = np.concatenate((preds, top_class.numpy()))
-                    full_lables = np.concatenate((full_lables, labels))
+                    if first:
+                        preds = top_class.numpy()
+                        full_lables = labels
+                    else:
+                        preds = np.concatenate((preds, top_class.numpy()))
+                        full_lables = np.concatenate((full_lables, labels))
 
                     #print('evaluating the correctness')
                     #equals = top_class == labels.view(*top_class.shape)
