@@ -5,6 +5,7 @@ import numpy as np
 import os
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
+from libs.evaluation.metrics import Evaluator
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
@@ -95,6 +96,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
             #total = 0
             accuracy = 0
             with torch.no_grad():
+                preds = np.array([])
+                full_lables = np.array([])
                 for x, labels in testloader:
                     #print('loading data from testloader')
                     x, labels = x.to(device), labels.to(device)
@@ -102,17 +105,24 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
                     outputs = model(x)
                     #print('checking the classes')
                     top_p, top_class = outputs.topk(1, dim=1)
+                    preds = np.concatenate((preds, top_class.numpy()))
+                    full_lables = np.concatenate((full_lables, labels))
+
                     #print('evaluating the correctness')
-                    equals = top_class == labels.view(*top_class.shape)
+                    #equals = top_class == labels.view(*top_class.shape)
                     #print('calculating accuracy')
-                    accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
+                    #accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
             print('calculating avg accuracy')
-            accuracy = (accuracy / len(testloader)) * 100
-            print('Accuracy of the network on the 10000 test images: %f %%' % accuracy)
-            acc_train.append(accuracy)
+            evaluator = Evaluator('accuracy', 'precision')
+            metrics = evaluator.run_metrics(preds, full_lables)
+            #accuracy = (accuracy / len(testloader)) * 100
+            print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
+            print('Precision of the network on the 10000 test images: %f %%' % metrics['precision'])
+            #acc_train.append(accuracy)
 
         model.train()
-        wandb_dict[args.mode + "_acc"] = acc_train[-1]
+        wandb_dict[args.mode + "_acc"] = metrics['accuracy']
+        wandb_dict[args.mode + "_prec"] = metrics['accuracy']
         wandb_dict[args.mode + '_loss'] = loss_avg
         wandb_dict['lr'] = this_lr
         if args.use_wandb:
