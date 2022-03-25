@@ -60,10 +60,10 @@ class Evaluator:
     def run_metrics(self, predicted, real) -> dict:
         tn, fp, fn, tp = confusion_matrix(real, predicted).ravel()
         results = {}
-        for metric in self.metrics:
-            metric = self.AVAILABLE_METRICS[metric]
+        for metric_name in self.metrics:
+            metric = self.AVAILABLE_METRICS[metric_name]
             result = metric.calculate((tn, fp, fn, tp))
-            results[metric] = result
+            results[metric_name] = result
         return results
 
 
