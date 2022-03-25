@@ -122,22 +122,31 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
             print('calculating avg accuracy')
             evaluator = Evaluator('accuracy', 'precision')
             metrics = evaluator.run_metrics(preds, full_lables)
-            print(metrics)
             #accuracy = (accuracy / len(testloader)) * 100
             print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
             print('Precision of the network on the 10000 test images: %f %%' % metrics['precision'])
+            print('Sensitivity of the network on the 10000 test images: %f %%' % metrics['sensitivity'])
+            print('Specificity of the network on the 10000 test images: %f %%' % metrics['specificity'])
+            print('F1-score of the network on the 10000 test images: %f %%' % metrics['f1score'])
             #acc_train.append(accuracy)
 
         model.train()
         wandb_dict[args.mode + "_acc"] = metrics['accuracy']
-        wandb_dict[args.mode + "_prec"] = metrics['accuracy']
+        wandb_dict[args.mode + "_prec"] = metrics['precision']
+        wandb_dict[args.mode + "_sens"] = metrics['sensitivity']
+        wandb_dict[args.mode + "_spec"] = metrics['specificity']
+        wandb_dict[args.mode + "_f1"] = metrics['f1score']
         wandb_dict[args.mode + '_loss'] = loss_avg
         wandb_dict['lr'] = this_lr
         if args.use_wandb:
             print('logging to wandb...')
             wandb.log(wandb_dict)
-        else:
-            save(args.mode + "_acc", wandb_dict[args.mode + "_acc"] )
+        save(args.mode + "_acc", wandb_dict[args.mode + "_acc"] )
+        save(args.mode + "_prec", wandb_dict[args.mode + "_prec"])
+        save(args.mode + "_sens", wandb_dict[args.mode + "_sens"])
+        save(args.mode + "_spec", wandb_dict[args.mode + "_spec"])
+        save(args.mode + "_f1", wandb_dict[args.mode + "_f1"])
+        save(args.mode + "_loss", wandb_dict[args.mode + "_loss"])
         print('Decay LR...')
         this_lr *= args.learning_rate_decay
         if args.alpha_mul_epoch:
