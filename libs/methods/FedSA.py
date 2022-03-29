@@ -29,6 +29,7 @@ class SimulatedAnnealing:
         self.plus = True
         self.threshold = threshold
         self.comunication = 1
+        self.model = None
 
     def _select_range_int(self, list_space, choice, best=None, neigh_size=2, plus=False):
         print(plus)
@@ -192,6 +193,7 @@ class SimulatedAnnealing:
             self.record_best_fitness_acc.append(acc)
             # Stop by computing time
             end = time.time()
+            self.model = model
             #if end - start >= self.computing_time:
                 #pass
                 # break

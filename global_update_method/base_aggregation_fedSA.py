@@ -10,6 +10,7 @@ from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from libs.evaluation.metrics import Evaluator
 import os
 
+
 def save(path, metric):
     exists = False
     if os.path.exists(path):
@@ -21,10 +22,44 @@ def save(path, metric):
     file.write(str(metric))
     file.close()
 
+
+def do_evaluation(testloader, model, device: int, **kwargs) -> dict:
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        preds = np.array([])
+        full_lables = np.array([])
+        first = True
+        for x, labels in testloader:
+            # print('loading data from testloader')
+            x, labels = x.to(device), labels.to(device)
+            # print('sending to the model..')
+            outputs = model(x)
+            # print('checking the classes')
+            top_p, top_class = outputs.topk(1, dim=1)
+            if first:
+                preds = top_class.numpy()
+                full_lables = copy.deepcopy(labels)
+                first = False
+            else:
+                preds = np.concatenate((preds, top_class.numpy()))
+                full_lables = np.concatenate((full_lables, labels))
+
+            # print('evaluating the correctness')
+            # equals = top_class == labels.view(*top_class.shape)
+            # print('calculating accuracy')
+            # accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
+    print('calculating avg accuracy')
+    evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
+    metrics = evaluator.run_metrics(preds, full_lables)
+    model.train()
+    return metrics
+
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 
-def GlobalUpdate(args, device, trainset, testloader, local_update):
+def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
@@ -48,6 +83,23 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
     sa.run(epoch=args.global_epochs, obj=participants_train, model=model, data=dataset, trainset=trainset,
            testloader=testloader, local_update=local_update, device=device, loss_train=loss_train,
            acc_train=acc_train, args=args)
+
+    if valloader is not None:
+        sa.model.eval()
+        test_metric = do_evaluation(valloader, sa.model, device)
+        sa.model.train()
+
+        print('Final Accuracy of the network on the 10000 test images: %f %%' % test_metric['accuracy'])
+        print('Final Precision of the network on the 10000 test images: %f %%' % test_metric['precision'])
+        print('Final Sensitivity of the network on the 10000 test images: %f %%' % test_metric['sensitivity'])
+        print('Final Specificity of the network on the 10000 test images: %f %%' % test_metric['specificity'])
+        print('Final F1-score of the network on the 10000 test images: %f %%' % test_metric['f1score'])
+
+        save(args.global_method + "_test_acc", test_metric['accuracy'])
+        save(args.global_method + "_test_prec", test_metric['precision'])
+        save(args.global_method + "_test_sens", test_metric['sensitivity'])
+        save(args.global_method + "_test_spec", test_metric['specificity'])
+        save(args.global_method + "_test_f1", test_metric['f1score'])
 
 
 def participants_train(X, global_model, dataset, epoch, kwargs):
@@ -102,37 +154,10 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     print(' Participants IDS: ', selected_participants)
     print(' Average loss {:.3f}'.format(loss_avg))
     loss_train.append(loss_avg)
-
     global_model.eval()
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        preds = np.array([])
-        full_lables = np.array([])
-        first = True
-        for x, labels in testloader:
-            # print('loading data from testloader')
-            x, labels = x.to(device), labels.to(device)
-            # print('sending to the model..')
-            outputs = global_model(x)
-            # print('checking the classes')
-            top_p, top_class = outputs.topk(1, dim=1)
-            if first:
-                preds = top_class.numpy()
-                full_lables = copy.deepcopy(labels)
-                first = False
-            else:
-                preds = np.concatenate((preds, top_class.numpy()))
-                full_lables = np.concatenate((full_lables, labels))
+    metrics = do_evaluation(testloader, global_model, device)
+    global_model.train()
 
-            # print('evaluating the correctness')
-            # equals = top_class == labels.view(*top_class.shape)
-            # print('calculating accuracy')
-            # accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
-
-    print('calculating avg accuracy')
-    evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
-    metrics = evaluator.run_metrics(preds, full_lables)
     # accuracy = (accuracy / len(testloader)) * 100
     print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
     print('Precision of the network on the 10000 test images: %f %%' % metrics['precision'])
@@ -141,8 +166,6 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     print('F1-score of the network on the 10000 test images: %f %%' % metrics['f1score'])
     # acc_train.append(accuracy)
 
-
-    global_model.train()
     wandb_dict[args.mode + "_acc"] = metrics['accuracy']
     wandb_dict[args.mode + "_prec"] = metrics['precision']
     wandb_dict[args.mode + "_sens"] = metrics['sensitivity']
@@ -153,12 +176,12 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     if args.use_wandb:
         print('logging to wandb...')
         wandb.log(wandb_dict)
-    save(args.mode + "_acc", wandb_dict[args.mode + "_acc"])
-    save(args.mode + "_prec", wandb_dict[args.mode + "_prec"])
-    save(args.mode + "_sens", wandb_dict[args.mode + "_sens"])
-    save(args.mode + "_spec", wandb_dict[args.mode + "_spec"])
-    save(args.mode + "_f1", wandb_dict[args.mode + "_f1"])
-    save(args.mode + "_loss", wandb_dict[args.mode + "_loss"])
+    save(args.global_method + "_acc", wandb_dict[args.mode + "_acc"])
+    save(args.global_method + "_prec", wandb_dict[args.mode + "_prec"])
+    save(args.global_method + "_sens", wandb_dict[args.mode + "_sens"])
+    save(args.global_method + "_spec", wandb_dict[args.mode + "_spec"])
+    save(args.global_method + "_f1", wandb_dict[args.mode + "_f1"])
+    save(args.global_method + "_loss", wandb_dict[args.mode + "_loss"])
 
     if args.alpha_mul_epoch:
         this_alpha = args.alpha * (epoch + 1)

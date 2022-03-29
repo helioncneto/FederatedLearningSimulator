@@ -64,8 +64,10 @@ def main():
     if dataset_factory is not None:
         global_update, local_update = None, None
 
-        trainset, testset = dataset_factory.get_dataset()
+        trainset, testset, valset = dataset_factory.get_dataset()
         testloader = DataLoader(testset, batch_size=args.batch_size,
+                                shuffle=False, num_workers=args.workers)
+        valloader = DataLoader(valset, batch_size=args.batch_size,
                                 shuffle=False, num_workers=args.workers)
         try:
             local_update = LOCALUPDATE_LOOKUP_TABLE[args.method].get_local_method()
@@ -78,7 +80,7 @@ def main():
             print('The chosen global method is not valid.')
             print(f'Valid global methods: {list(GLOBALAGGREGATION_LOOKUP_TABLE.keys())}')
         if global_update is not None and local_update is not None:
-            global_update(args=args, device=device, trainset=trainset, testloader=testloader,
+            global_update(args=args, device=device, trainset=trainset, testloader=testloader, valloader=valloader,
                           local_update=local_update)
 
 

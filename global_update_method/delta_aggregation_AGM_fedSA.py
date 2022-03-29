@@ -22,8 +22,56 @@ def save(path, metric):
     file.write(str(metric))
     file.close()
 
+def do_evaluation(testloader, model, device: int, **kwargs) -> dict:
+    model.eval()
+    prev_model, loss_func, alpha, mu = None, None, None, None
+    check_kwargs = not kwargs
+    if not check_kwargs:
+        prev_model = kwargs['prev_model']
+        loss_func = kwargs['loss_func']
+        alpha = kwargs['alpha']
+        mu = kwargs['mu']
+    ce_loss_test = []
+    reg_loss_test = []
+    total_loss_test = []
+    preds = np.array([])
+    full_lables = np.array([])
+    first = True
+    with torch.no_grad():
+        for data in testloader:
+            x, labels = data[0].to(device), data[1].to(device)
+            outputs = model(x)
+            ce_loss = loss_func(outputs, labels)
 
-def GlobalUpdate(args, device, trainset, testloader, local_update):
+            ## Weight L2 loss
+            reg_loss = 0
+            fixed_params = {n: p for n, p in prev_model.named_parameters()}
+            for n, p in model.named_parameters():
+                reg_loss += ((p - fixed_params[n].detach()) ** 2).sum()
+
+            loss = alpha * ce_loss + 0.5 * mu * reg_loss
+
+            top_p, top_class = outputs.topk(1, dim=1)
+            if first:
+                preds = top_class.numpy()
+                full_lables = copy.deepcopy(labels)
+                first = False
+            else:
+                preds = np.concatenate((preds, top_class.numpy()))
+                full_lables = np.concatenate((full_lables, labels))
+
+            ce_loss_test.append(ce_loss.item())
+            reg_loss_test.append(reg_loss.item())
+            total_loss_test.append(loss.item())
+
+    print('calculating avg accuracy')
+    evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
+    metrics = evaluator.run_metrics(preds, full_lables)
+    model.train()
+    return metrics
+
+
+def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
@@ -47,6 +95,24 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
     sa.run(epoch=args.global_epochs, obj=participants_train, model=model, data=dataset, trainset=trainset,
            testloader=testloader, local_update=local_update, device=device, loss_train=loss_train,
            acc_train=acc_train, args=args, global_delta=global_delta, this_tau=this_tau)
+
+    if valloader is not None:
+        sa.model.eval()
+        test_metric = do_evaluation(testloader=testloader, model=sa.model, device=device, loss_func=torch.nn.NLLLoss(),
+                                    prev_model=sa.model, alpha=args.alpha, mu=args.mu)
+        sa.model.train()
+
+        print('Final Accuracy of the network on the 10000 test images: %f %%' % test_metric['accuracy'])
+        print('Final Precision of the network on the 10000 test images: %f %%' % test_metric['precision'])
+        print('Final Sensitivity of the network on the 10000 test images: %f %%' % test_metric['sensitivity'])
+        print('Final Specificity of the network on the 10000 test images: %f %%' % test_metric['specificity'])
+        print('Final F1-score of the network on the 10000 test images: %f %%' % test_metric['f1score'])
+
+        save(args.global_method + "_test_acc", test_metric['accuracy'])
+        save(args.global_method + "_test_prec", test_metric['precision'])
+        save(args.global_method + "_test_sens", test_metric['sensitivity'])
+        save(args.global_method + "_test_spec", test_metric['specificity'])
+        save(args.global_method + "_test_f1", test_metric['f1score'])
 
 
 
@@ -139,45 +205,9 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     prev_model.load_state_dict(global_weight)
     if epoch % args.print_freq == 0:
         global_model.eval()
-        correct = 0
-        total = 0
-        acc_test = []
-        ce_loss_test = []
-        reg_loss_test = []
-        total_loss_test = []
-        preds = np.array([])
-        full_lables = np.array([])
-        first = True
-        with torch.no_grad():
-            for data in testloader:
-                x, labels = data[0].to(device), data[1].to(device)
-                outputs = global_model(x)
-                ce_loss = loss_func(outputs, labels)
-
-                ## Weight L2 loss
-                reg_loss = 0
-                fixed_params = {n: p for n, p in prev_model.named_parameters()}
-                for n, p in global_model.named_parameters():
-                    reg_loss += ((p - fixed_params[n].detach()) ** 2).sum()
-
-                loss = args.alpha * ce_loss + 0.5 * args.mu * reg_loss
-
-                top_p, top_class = outputs.topk(1, dim=1)
-                if first:
-                    preds = top_class.numpy()
-                    full_lables = copy.deepcopy(labels)
-                    first = False
-                else:
-                    preds = np.concatenate((preds, top_class.numpy()))
-                    full_lables = np.concatenate((full_lables, labels))
-
-                ce_loss_test.append(ce_loss.item())
-                reg_loss_test.append(reg_loss.item())
-                total_loss_test.append(loss.item())
-
-        print('calculating avg accuracy')
-        evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
-        metrics = evaluator.run_metrics(preds, full_lables)
+        metrics = do_evaluation(testloader=testloader, model=global_model, device=device, loss_func=loss_func,
+                                    prev_model=prev_model, alpha=args.alpha, mu=args.mu)
+        global_model.train()
         # accuracy = (accuracy / len(testloader)) * 100
         print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
         print('Precision of the network on the 10000 test images: %f %%' % metrics['precision'])
@@ -196,12 +226,12 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     if args.use_wandb:
         print('logging to wandb...')
         wandb.log(wandb_dict)
-    save(args.mode + "_acc", wandb_dict[args.mode + "_acc"])
-    save(args.mode + "_prec", wandb_dict[args.mode + "_prec"])
-    save(args.mode + "_sens", wandb_dict[args.mode + "_sens"])
-    save(args.mode + "_spec", wandb_dict[args.mode + "_spec"])
-    save(args.mode + "_f1", wandb_dict[args.mode + "_f1"])
-    save(args.mode + "_loss", wandb_dict[args.mode + "_loss"])
+    save(args.global_method + "_acc", wandb_dict[args.mode + "_acc"])
+    save(args.global_method + "_prec", wandb_dict[args.mode + "_prec"])
+    save(args.global_method + "_sens", wandb_dict[args.mode + "_sens"])
+    save(args.global_method + "_spec", wandb_dict[args.mode + "_spec"])
+    save(args.global_method + "_f1", wandb_dict[args.mode + "_f1"])
+    save(args.global_method + "_loss", wandb_dict[args.mode + "_loss"])
 
     #this_tau *= args.server_learning_rate_decay
 

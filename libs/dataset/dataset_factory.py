@@ -131,7 +131,7 @@ class CICIDS2017DatasetFactory(IDatasetFactory):
         data = data.replace(np.inf, 1.7976931348623157e+301).replace(-np.inf, -1.7976931348623157e+301)
         data.dropna(inplace=True)
 
-        train, test = train_test_split(data, test_size=args.test_size + args.val_size)
+        train, test = train_test_split(data, test_size=args.test_size + args.val_size, random_state=args.seed)
         val_proportion = args.val_size / (args.test_size + args.val_size)
         val, test = train_test_split(test, test_size=val_proportion)
 
@@ -139,7 +139,7 @@ class CICIDS2017DatasetFactory(IDatasetFactory):
         testset = cicids_dataset.CICIDS2017Dataset(test)
         valset = cicids_dataset.CICIDS2017Dataset(val)
 
-        return trainset, testset
+        return trainset, testset, valset
 
 
 DATASETS_LOOKUP_TABLE = {
