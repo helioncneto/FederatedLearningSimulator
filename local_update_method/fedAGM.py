@@ -15,10 +15,7 @@ class LocalUpdate:
         self.local_epoch = local_epoch
         self.device = device
         self.isCICIDS2017 = True if args.mode == "CICIDS2017" else False
-        if self.isCICIDS2017:
-            self.loss_func = nn.NLLLoss()
-        else:
-            self.loss_func = nn.CrossEntropyLoss()
+        self.loss_func = nn.CrossEntropyLoss()
         self.selected_clients = []
         self.ldr_train = DataLoader(DatasetSplit(dataset, idxs), batch_size=batch_size, shuffle=True)
         self.alpha = alpha
@@ -44,10 +41,7 @@ class LocalUpdate:
                 #    log_probs = net(x)
                 #else:
                 #    log_probs = net(x)
-                if self.isCICIDS2017:
-                    ce_loss = self.loss_func(log_probs, labels.float())
-                else:
-                    ce_loss = self.loss_func(log_probs, labels)
+                ce_loss = self.loss_func(log_probs, labels)
 
                 # print(log_probs, labels)
                 # Weight L2 loss
