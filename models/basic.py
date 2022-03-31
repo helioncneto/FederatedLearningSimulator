@@ -3,6 +3,7 @@
 
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import square
 import copy
 
 
@@ -28,6 +29,9 @@ class FC2_Base(nn.Module):
         self.fc1 = nn.Linear(in_layer, 50) # 200
         self.fc2 = nn.Linear(50, 100) # 200 -> 100
         self.fc3 = nn.Linear(100, num_classes)
+
+    def compute_l2_loss(self, w):
+        return square(w).sum()
 
     def forward(self, x):
 

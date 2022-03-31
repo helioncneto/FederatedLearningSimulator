@@ -160,10 +160,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         print(' Participants IDS: ', selected_user)
         print(' Average loss {:.3f}'.format(loss_avg))
         loss_train.append(loss_avg)
-        if isCICIDS2017:
-            loss_func = nn.NLLLoss()
-        else:
-            loss_func = nn.CrossEntropyLoss()
+        loss_func = nn.NLLLoss()
         prev_model = copy.deepcopy(model)
         prev_model.load_state_dict(global_weight)
         if epoch % args.print_freq == 0:
@@ -205,7 +202,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
     if valloader is not None:
         model.eval()
-        test_metric = do_evaluation(valloader, model, device, model=model, device=device, loss_func=loss_func,
+        test_metric = do_evaluation(valloader, model=model, device=device, loss_func=loss_func,
                                     prev_model=prev_model, alpha=args.alpha, mu=args.mu)
         model.train()
 
