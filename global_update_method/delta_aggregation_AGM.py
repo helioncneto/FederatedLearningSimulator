@@ -19,8 +19,8 @@ def save(path, metric):
     file.write(str(metric))
     file.close()
 
+
 def do_evaluation(testloader, model, device: int, **kwargs) -> dict:
-    model.eval()
     prev_model, loss_func, alpha, mu = None, None, None, None
     check_kwargs = not kwargs
     if not check_kwargs:
@@ -28,7 +28,6 @@ def do_evaluation(testloader, model, device: int, **kwargs) -> dict:
         loss_func = kwargs['loss_func']
         alpha = kwargs['alpha']
         mu = kwargs['mu']
-
 
     correct = 0
     total = 0
@@ -73,7 +72,6 @@ def do_evaluation(testloader, model, device: int, **kwargs) -> dict:
     print('calculating avg accuracy')
     evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
     metrics = evaluator.run_metrics(preds, full_lables)
-    model.train()
     return metrics
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):

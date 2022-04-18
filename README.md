@@ -1,4 +1,4 @@
-Federated Learning Simulator
+ Federated Learning Simulator
 ===
 PyTorch implementation for federated learning simulation and evaluation. The simultor aims to evaluate federated learning proposals.
 

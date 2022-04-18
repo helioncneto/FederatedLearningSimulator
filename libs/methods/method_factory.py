@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from global_update_method import base_aggregation, delta_aggregation_slowmo, adam_aggregation, delta_aggregation, \
-    delta_aggregation_fedDyn, delta_aggregation_AGM, base_aggregation_fedSA, delta_aggregation_AGM_fedSA
+    delta_aggregation_fedDyn, delta_aggregation_AGM, base_aggregation_fedSA, delta_aggregation_AGM_fedSA, \
+    base_aggregation_IG
 
 from local_update_method import base, weight_l2, fedCM, fedDyn, fedAGM
 
@@ -26,6 +27,13 @@ class GlobalBaseAggregationFactory(IGlobalMethodFactory):
 
     def get_global_method(self):
         return base_aggregation.GlobalUpdate
+
+
+class GlobalBaseAggregationIGFactory(IGlobalMethodFactory):
+    """Method for returning the FedAVG using IG for selection"""
+
+    def get_global_method(self):
+        return base_aggregation_IG.GlobalUpdate
 
 
 class GlobalDeltaAggregationSlowmoFactory(IGlobalMethodFactory):
@@ -68,6 +76,7 @@ class GlobalBaseAggregationFedSAFactory(IGlobalMethodFactory):
 
     def get_global_method(self):
         return base_aggregation_fedSA.GlobalUpdate
+
 
 class GlobalDeltaAggregationFedSAFactory(IGlobalMethodFactory):
     """Method for returning the Delta FedSA global aggregation method"""
@@ -126,7 +135,8 @@ GLOBALAGGREGATION_LOOKUP_TABLE = {'base_avg': GlobalBaseAggregationFactory(),
                                   'FedDyn': GlobalDeltaAggregationFedDynFactory(),
                                   'FedAGM':  GlobalDeltaAggregationFedAGMFactory(),
                                   'FedSA':  GlobalBaseAggregationFedSAFactory(),
-                                  'FedSA_AGM': GlobalDeltaAggregationFedSAFactory()
+                                  'FedSA_AGM': GlobalDeltaAggregationFedSAFactory(),
+                                  "FedAvg_IG": GlobalBaseAggregationIGFactory()
                                   }
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ from sklearn.metrics import confusion_matrix
 from typing import Protocol
 
 
+
 class Metrics(Protocol):
     @staticmethod
     def calculate(conf_matrix: tuple) -> float:
@@ -64,6 +65,7 @@ class Evaluator:
             metric = self.AVAILABLE_METRICS[metric_name]
             result = metric.calculate((tn, fp, fn, tp))
             results[metric_name] = result
+
         return results
 
 

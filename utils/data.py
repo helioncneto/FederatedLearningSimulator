@@ -41,9 +41,13 @@ class DatasetSplitMultiView(Dataset):
         return torch.tensor(view1), torch.tensor(view2), torch.tensor(label)
 
 
-def get_dataset(args, trainset, mode='iid'):
-    directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced'
-    filepath = directory + '/' + mode + (str(args.dirichlet_alpha) if mode == 'dirichlet' else '') + '_clients' + str(args.num_of_clients) + '.txt'
+def get_dataset(args, trainset, mode='iid', compatible=True, directory=None, filepath=None, participants=5):
+    if compatible:
+        directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced'
+        filepath = directory + '/' + mode + (str(args.dirichlet_alpha) if mode == 'dirichlet' else '') + '_clients' + str(args.num_of_clients) + '.txt'
+    elif directory is None or filepath is None:
+        raise Exception("Directory and Filepath can't be None")
+
     check_already_exist = os.path.isfile(filepath) and (os.stat(filepath).st_size != 0)
     create_new_client_data = not check_already_exist or args.create_client_dataset
     print("create new client data: " + str(create_new_client_data))
@@ -58,7 +62,10 @@ def get_dataset(args, trainset, mode='iid'):
             print("Have problem to read client data")
     elif create_new_client_data:
         if mode == 'iid':
-            dataset = cifar_iid(trainset, args.num_of_clients)
+            if compatible:
+                dataset = cifar_iid(trainset, args.num_of_clients)
+            else:
+                dataset = cifar_iid(trainset, participants)
         elif mode == 'skew1class':
             dataset = cifar_noniid(trainset, args.num_of_clients)
         elif mode == 'dirichlet':

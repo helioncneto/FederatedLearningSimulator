@@ -31,7 +31,7 @@ class LocalUpdate:
         epoch_loss = []
 
         # Train and update
-        for iter in range(self.local_epoch):
+        for epoch in range(self.local_epoch):
             batch_loss = []
             for batch_idx, (x, labels) in enumerate(self.ldr_train):
                 x, labels = x.to(self.device), labels.to(self.device)
