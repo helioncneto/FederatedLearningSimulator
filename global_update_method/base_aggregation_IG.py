@@ -92,7 +92,7 @@ def calc_ig(parent_entropy: float, child_entropy: dict, parent_size: int, child_
     ig = {}
     for idx, (client_id, child) in enumerate(child_entropy.items()):
         w = child_size[idx]/parent_size
-        curr_ig = parent_entropy - (w * child)
+        curr_ig = -np.log(parent_entropy) + (-np.log(w * child))
         ig[client_id] = curr_ig
     return ig
 
@@ -146,23 +146,33 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         # Sample participating agents for this global round
         selected_participants = []
         selection_helper = copy.deepcopy(participants_score)
+        not_selected_participants = list(participants_score.keys())
         if epoch == 0:
             print('Selecting the participants')
             selected_participants = np.random.choice(range(args.num_of_clients + selected_participants_fake_num),
                                                      selected_participants_num,
                                                      replace=False)
+            not_selected_participants = list(set(not_selected_participants) - set(selected_participants))
+
         elif args.participation_rate < 1:
             for _ in range(selected_participants_num):
                 p = random.random()
                 if p < ep_greedy:
                     print("Random selection")
-                    selected = np.random.choice(list(selection_helper.keys()))
+                    if len(not_selected_participants) != 0:
+                        selected = np.random.choice(not_selected_participants)
+                    else:
+                        selected = np.random.choice(list(selection_helper.keys()))
+                    if selected in not_selected_participants:
+                        not_selected_participants.remove(selected)
                     selection_helper.pop(selected)
                     selected_participants.append(selected)
                 else:
                     # Select the best participant
                     print("Greedy selection")
                     selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[0]
+                    if selected in not_selected_participants:
+                        not_selected_participants.remove(selected)
                     selection_helper.pop(selected)
                     selected_participants.append(selected)
             ## Selecting fake participants
