@@ -38,8 +38,6 @@ class LocalUpdate:
                 images, labels = images.to(self.device), labels.to(self.device)
                 net.zero_grad()
                 log_probs = model(images)
-                print(labels)
-                print(log_probs)
                 if self.oneclass:
                     loss = self.loss_func(log_probs, labels.float())
                 else:

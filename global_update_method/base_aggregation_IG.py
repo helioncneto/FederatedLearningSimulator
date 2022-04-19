@@ -155,11 +155,13 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             for _ in range(selected_participants_num):
                 p = random.random()
                 if p < ep_greedy:
+                    print("Random selection")
                     selected = np.random.choice(list(selection_helper.keys()))
                     selection_helper.pop(selected)
                     selected_participants.append(selected)
                 else:
                     # Select the best participant
+                    print("Greedy selection")
                     selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[0]
                     selection_helper.pop(selected)
                     selected_participants.append(selected)
