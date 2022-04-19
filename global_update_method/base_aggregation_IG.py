@@ -111,25 +111,27 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         args.num_of_clients) + '.txt'
 
     # Gen fake data
-    trainset_fake = gen_train_fake(samples=1000000) # 1590000
+    selected_participants_fake_num = args.num_of_clients
+
+    trainset_fake = gen_train_fake(samples=1500000) # 1590000
     dataset_fake = get_dataset(args, trainset_fake, args.mode, compatible=False,
-                               directory=directory, filepath=filepath)
+                               directory=directory, filepath=filepath, participants=selected_participants_fake_num)
 
     loss_train = []
     acc_train = []
     this_lr = args.lr
     this_alpha = args.alpha
-    selected_participants_fake_num = 5
+
     total_participants = args.num_of_clients + selected_participants_fake_num
     selected_participants_num = max(int(args.participation_rate * total_participants), 1)
-    selected_participants = None
+    #selected_participants = None
     # selected_participants_fake = np.random.choice(range(5),
                                                   #selected_participants_fake_num,
                                                   #replace=False)
     loss_func = nn.CrossEntropyLoss()
     ig = {}
     participants_score = {idx: selected_participants_num/total_participants for idx in range(total_participants)}
-    ep_greedy = 0.5
+    ep_greedy = args.epsilon_greedy
 
 
     for epoch in range(args.global_epochs):
@@ -321,3 +323,4 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         save(args.mode + "_test_sens", test_metric['sensitivity'])
         save(args.mode + "_test_spec", test_metric['specificity'])
         save(args.mode + "_test_f1", test_metric['f1score'])
+        save(args.mode + "_ig", ig)

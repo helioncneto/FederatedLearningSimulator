@@ -173,6 +173,14 @@ def parse_arguments():
         metavar="N",
         help="number of total clients",
     )
+
+    parser.add_argument(
+        "--epsilon_greedy",
+        default=0.5,
+        type=float,
+        metavar="N",
+        help="number of participation rate at each global epoch",
+    )
     parser.add_argument(
         "--participation_rate",
         default=0.1,
