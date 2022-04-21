@@ -131,6 +131,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     loss_func = nn.CrossEntropyLoss()
     ig = {}
     participants_score = {idx: selected_participants_num/total_participants for idx in range(total_participants)}
+    not_selected_participants = list(participants_score.keys())
     ep_greedy = args.epsilon_greedy
 
 
@@ -146,7 +147,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         # Sample participating agents for this global round
         selected_participants = []
         selection_helper = copy.deepcopy(participants_score)
-        not_selected_participants = list(participants_score.keys())
+
         if epoch == 0:
             print('Selecting the participants')
             selected_participants = np.random.choice(range(args.num_of_clients + selected_participants_fake_num),
