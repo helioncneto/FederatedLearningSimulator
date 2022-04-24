@@ -113,16 +113,17 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     # Gen fake data
     selected_participants_fake_num = args.num_of_clients
 
-    trainset_fake = gen_train_fake(samples=1500000) # 1590000
-    dataset_fake = get_dataset(args, trainset_fake, args.mode, compatible=False,
-                               directory=directory, filepath=filepath, participants=selected_participants_fake_num)
+    # trainset_fake = gen_train_fake(samples=1500000) # 1590000
+    # dataset_fake = get_dataset(args, trainset_fake, args.mode, compatible=False,
+                               #directory=directory, filepath=filepath, participants=selected_participants_fake_num)
 
     loss_train = []
     acc_train = []
     this_lr = args.lr
     this_alpha = args.alpha
 
-    total_participants = args.num_of_clients + selected_participants_fake_num
+    #total_participants = args.num_of_clients + selected_participants_fake_num
+    total_participants = args.num_of_clients
     selected_participants_num = max(int(args.participation_rate * total_participants), 1)
     #selected_participants = None
     # selected_participants_fake = np.random.choice(range(5),
@@ -150,7 +151,10 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
         if epoch == 0:
             print('Selecting the participants')
-            selected_participants = np.random.choice(range(args.num_of_clients + selected_participants_fake_num),
+            #selected_participants = np.random.choice(range(args.num_of_clients + selected_participants_fake_num),
+                                                     #selected_participants_num,
+                                                     #replace=False)
+            selected_participants = np.random.choice(range(args.num_of_clients),
                                                      selected_participants_num,
                                                      replace=False)
             not_selected_participants = list(set(not_selected_participants) - set(selected_participants))
@@ -189,19 +193,19 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         models_val_loss = {}
 
         for participant in selected_participants:
-            if participant < args.num_of_clients:
-                num_of_data_clients.append(len(dataset[participant]))
-                idxs = dataset[participant]
-                local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                             batch_size=args.batch_size, dataset=trainset, idxs=idxs,
-                                             alpha=this_alpha)
-            else:
-                num_of_data_clients.append(len(dataset_fake[participant - args.num_of_clients]))
-                idxs = dataset_fake[participant - args.num_of_clients]
-                local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                             batch_size=args.batch_size, dataset=trainset_fake,
-                                             idxs=idxs,
-                                             alpha=this_alpha)
+            #if participant < args.num_of_clients:
+            num_of_data_clients.append(len(dataset[participant]))
+            idxs = dataset[participant]
+            local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
+                                         batch_size=args.batch_size, dataset=trainset, idxs=idxs,
+                                         alpha=this_alpha)
+            #else:
+                #num_of_data_clients.append(len(dataset_fake[participant - args.num_of_clients]))
+                #idxs = dataset_fake[participant - args.num_of_clients]
+                #local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
+                                             #batch_size=args.batch_size, dataset=trainset_fake,
+                                             #idxs=idxs,
+                                             #alpha=this_alpha)
 
             weight, loss = local_setting.train(net=copy.deepcopy(model).to(device))
             local_weight.append(copy.deepcopy(weight))

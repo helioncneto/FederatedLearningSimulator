@@ -125,6 +125,7 @@ class CICIDS2017DatasetFactory(IDatasetFactory):
 
         print('Loading CICIDS2017 file...')
         data = pd.read_csv(cic_ids_path)
+        print(len(data))
         data['Flow Bytes/s'] = data['Flow Bytes/s'].astype(float)
         data[' Flow Packets/s'] = data[' Flow Packets/s'].astype(float)
         # Drop NAN and INF
