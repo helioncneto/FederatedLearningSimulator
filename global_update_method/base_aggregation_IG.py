@@ -133,8 +133,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     ig = {}
     participants_score = {idx: selected_participants_num/total_participants for idx in range(total_participants)}
     not_selected_participants = list(participants_score.keys())
-    ep_greedy = args.epsilon_greedy
-
+    #ep_greedy = args.epsilon_greedy
+    ep_greedy = 1
+    ep_greedy_decay = pow(0.001, 1/args.global_epochs)
 
     for epoch in range(args.global_epochs):
         print('starting a new epoch')
@@ -144,12 +145,13 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         local_loss = []
         local_delta = []
         global_weight = copy.deepcopy(model.state_dict())
+        eg_momentum = 0.9
 
         # Sample participating agents for this global round
         selected_participants = []
         selection_helper = copy.deepcopy(participants_score)
 
-        if epoch == 0:
+        if epoch == 0 or args.participation_rate >= 1:
             print('Selecting the participants')
             #selected_participants = np.random.choice(range(args.num_of_clients + selected_participants_fake_num),
                                                      #selected_participants_num,
@@ -229,33 +231,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                 delta[key] = weight[key] - global_weight[key]
             local_delta.append(delta)
 
-        '''print('Training participants fake participants')
-        for participant in selected_participants_fake:
-            num_of_data_clients.append(len(dataset_fake[participant]))
-            local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                         batch_size=args.batch_size, dataset=trainset_fake, idxs=dataset_fake[participant],
-                                         alpha=this_alpha)
-            weight, loss = local_setting.train(net=copy.deepcopy(model).to(device))
-            local_weight.append(copy.deepcopy(weight))
-            local_loss.append(copy.deepcopy(loss))
-
-            local_model = copy.deepcopy(model).to(device)
-            local_model.load_state_dict(weight)
-            local_model.eval()
-            batch_loss = []
-            with torch.no_grad():
-                for x, labels in testloader:
-                    x, labels = x.to(device), labels.to(device)
-                    outputs = local_model(x)
-                    local_val_loss = loss_func(outputs, labels)
-                    batch_loss.append(local_val_loss.item())
-                    models_val_loss[participant + args.num_of_clients] = sum(batch_loss) / len(batch_loss)
-            delta = {}
-            for key in weight.keys():
-                delta[key] = weight[key] - global_weight[key]
-            local_delta.append(delta)'''
-
-
         total_num_of_data_clients = sum(num_of_data_clients)
         FedAvg_weight = copy.deepcopy(local_weight[0])
         for key in FedAvg_weight.keys():
@@ -287,18 +262,25 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                 ig[client_id].append(client_ig)
             else:
                 ig[client_id].append(client_ig)
-            participants_score[client_id] = sum(ig[client_id]) / len(ig[client_id])
+            if len(ig[client_id]) <= 1:
+                participants_score[client_id] = ig[client_id]
+            else:
+                delta_term = sum(ig[client_id][:-1]) / len(ig[client_id][:-1])
+                participants_score[client_id] = ((1 - eg_momentum) * delta_term) + (eg_momentum * ig[client_id][-1])
+            #participants_score[client_id] = sum(ig[client_id]) / len(ig[client_id])
 
         print(participants_score)
 
 
         if epoch % args.print_freq == 0:
+            print('Loss of the network on the 10000 test images: %f %%' % metrics['loss'])
             print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
             print('Precision of the network on the 10000 test images: %f %%' % metrics['precision'])
             print('Sensitivity of the network on the 10000 test images: %f %%' % metrics['sensitivity'])
             print('Specificity of the network on the 10000 test images: %f %%' % metrics['specificity'])
             print('F1-score of the network on the 10000 test images: %f %%' % metrics['f1score'])
             print(f'Information Gain: {ig}')
+            print(f'Participants loss: {models_val_loss}')
 
 
         wandb_dict[args.mode + "_acc"] = metrics['accuracy']
@@ -323,6 +305,10 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             this_alpha = args.alpha * (epoch + 1)
         elif args.alpha_divide_epoch:
             this_alpha = args.alpha / (epoch + 1)
+
+        if epoch != 0:
+            print("Decay Epsilon...")
+            ep_greedy *= ep_greedy_decay
 
     if valloader is not None:
         model.eval()
