@@ -238,6 +238,14 @@ def parse_arguments():
         help="gradient clippling max norm",
     )
 
+    parser.add_argument(
+        "--eval_path",
+        default=".",
+        type=str,
+        metavar="N",
+        help="gradient clippling max norm",
+    )
+
     ## Dataset
     parser.add_argument("--set", help="name of dataset", type=str, default="CIFAR10")
     parser.add_argument(
