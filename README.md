@@ -7,7 +7,13 @@ PyTorch implementation for federated learning simulation and evaluation. The sim
 To install all the prerequisites, you can use the following command:
 
 ~~~
-conda create --name <env> --file requirements.txt
+pip install requirements.txt 
+~~~
+
+You also can install prerequisites via Anaconda
+
+~~~
+conda env create -f fl_simulator_env.yaml
 ~~~
 
 The command for the global training:
