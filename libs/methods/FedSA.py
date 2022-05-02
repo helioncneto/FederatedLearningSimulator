@@ -112,12 +112,13 @@ class SimulatedAnnealing:
 
     # ------------------------------------------------------------------------------
     # Simulated Annealing Algorithm:
-    def run(self, epoch, obj, model, data, **kwargs):
+    def run(self, epoch, obj, model, data, ig_enable=False, **kwargs):
         initial_solution = list()
 
         initial_solution.append(self._select_range_float(self.lr))
         initial_solution.append(self._select_range_int(self.local_update, 1)[0])
-        [initial_solution.append(i) for i in self._select_range_int(self.participants[:2], self.participants[2])]
+        if not ig_enable:
+            [initial_solution.append(i) for i in self._select_range_int(self.participants[:2], self.participants[2])]
         current_solution = initial_solution
         # print(initial_solution)
         best_solution = current_solution
@@ -133,8 +134,9 @@ class SimulatedAnnealing:
             current_solution.append(self._select_range_float(self.lr, best=best_solution[0]))
             current_solution.append(self._select_range_int(self.local_update, 1, best=[best_solution[1]],
                                                            plus=self.plus)[0])
-            [current_solution.append(i) for i in self._select_range_int(self.participants[:2], self.participants[2],
-                                                                        best=best_solution[2:], plus=self.plus)]
+            if not ig_enable:
+                [current_solution.append(i) for i in self._select_range_int(self.participants[:2], self.participants[2],
+                                                                            best=best_solution[2:], plus=self.plus)]
             print("Teste dos novos parâmetros")
             model, current_fitness, acc = self.objective_function(best_solution, obj, model, data, kwargs)
             energy = abs(current_fitness - best_fitness)
@@ -172,8 +174,9 @@ class SimulatedAnnealing:
                         best_solution = list()
                         best_solution.append(self._select_range_float(self.lr))
                         best_solution.append(self._select_range_int(self.local_update, 1)[0])
-                        [best_solution.append(i) for i in self._select_range_int(self.participants[:2],
-                                                                                 self.participants[2])]
+                        if not ig_enable:
+                            [best_solution.append(i) for i in self._select_range_int(self.participants[:2],
+                                                                                    self.participants[2])]
                     else:
                         print("O best continua sendo o melhor")
             else:

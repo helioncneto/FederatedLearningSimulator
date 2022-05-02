@@ -1,10 +1,18 @@
 #!/usr/bin/env python
+import numpy as np
+import torch
+from torch import nn
+
 from libs.methods.FedSA import SimulatedAnnealing
+from libs.methods.ig import selection_ig, update_participants_score, calc_ig, load_from_file, save_dict_file
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import wandb
 import copy
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from utils.helper import save, do_evaluation
+
+
+
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
@@ -22,6 +30,15 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     acc_train = []
 
     selected_participants_num = max(int(args.participation_rate * args.num_of_clients), 1)
+    total_participants = args.num_of_clients
+    participants_score = {idx: selected_participants_num / total_participants for idx in range(total_participants)}
+    not_selected_participants_list = list(participants_score.keys())
+    not_selected_participants = {"not_selected": not_selected_participants_list}
+    ig = {}
+
+    save_dict_file('.tmp/ig.pkl', ig)
+    save_dict_file('.tmp/participants_score.pkl', participants_score)
+    save_dict_file('.tmp/not_selected_participants.pkl', not_selected_participants)
 
     num_of_data_clients = []
 
@@ -32,7 +49,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                             threshold=0.01)
     sa.run(epoch=args.global_epochs, obj=participants_train, model=model, data=dataset, trainset=trainset,
            testloader=testloader, local_update=local_update, device=device, loss_train=loss_train,
-           acc_train=acc_train, args=args)
+           acc_train=acc_train, args=args, selected_participants_num=selected_participants_num, ep_greedy=0.9,
+           not_selected_participants=not_selected_participants, participants_score=participants_score,
+           ig=ig)
 
     if valloader is not None:
         sa.model.eval()
@@ -54,9 +73,12 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
 def participants_train(X, global_model, dataset, epoch, kwargs):
     lr = X[0]
+    loss_func = nn.CrossEntropyLoss()
+    eg_momentum = 0.9
     # print('Learning rate: {}'.format(lr))
     local_epochs = int(X[1])
-    selected_participants = [int(X[i]) for i in range(2, len(X) - 1)]
+    #selected_participants = [int(X[i]) for i in range(2, len(X) - 1)]
+
     trainset = kwargs['trainset']
     testloader = kwargs['testloader']
     local_update = kwargs['local_update']
@@ -64,6 +86,32 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     loss_train = kwargs['loss_train']
     acc_train = kwargs['acc_train']
     args = kwargs['args']
+
+    selected_participants_num = kwargs['selected_participants_num']
+    ep_greedy = kwargs['ep_greedy']
+    not_selected_participants = load_from_file('.tmp/not_selected_participants.pkl')
+    participants_score = load_from_file('.tmp/participants_score.pkl')
+    ig = load_from_file('.tmp/ig.pkl')
+
+    #not_selected_participants = kwargs['not_selected_participants']
+    #participants_score = kwargs['participants_score']
+    #ig = kwargs['ig']
+
+    if epoch == 1 or args.participation_rate >= 1:
+        print('Selecting the participants')
+        # selected_participants = np.random.choice(range(args.num_of_clients + selected_participants_fake_num),
+        # selected_participants_num,
+        # replace=False)
+        selected_participants = np.random.choice(range(args.num_of_clients),
+                                                 selected_participants_num,
+                                                 replace=False)
+        not_selected_participants["not_selected"] = list(set(not_selected_participants["not_selected"]) - set(selected_participants))
+
+    elif args.participation_rate < 1:
+        selected_participants, not_selected_participants["not_selected"] = selection_ig(selected_participants_num, ep_greedy,
+                                                                        not_selected_participants["not_selected"],
+                                                                        participants_score)
+
 
     num_of_data_clients = []
     this_alpha = args.alpha
@@ -74,6 +122,7 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     wandb_dict = {}
 
     print(f'Aggregation Round: {epoch}')
+    models_val_loss = {}
 
     for participant in selected_participants:
         num_of_data_clients.append(len(dataset[participant]))
@@ -83,6 +132,19 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
         weight, loss = local_setting.train(net=copy.deepcopy(global_model).to(device))
         local_weight.append(copy.deepcopy(weight))
         local_loss.append(copy.deepcopy(loss))
+        local_model = copy.deepcopy(global_model).to(device)
+        local_model.load_state_dict(weight)
+        local_model.eval()
+
+        batch_loss = []
+        with torch.no_grad():
+            for x, labels in testloader:
+                x, labels = x.to(device), labels.to(device)
+                outputs = local_model(x)
+                local_val_loss = loss_func(outputs, labels)
+                batch_loss.append(local_val_loss.item())
+            models_val_loss[participant] = (sum(batch_loss) / len(batch_loss))
+
         delta = {}
         for key in weight.keys():
             delta[key] = weight[key] - global_weight[key]
@@ -108,12 +170,24 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     metrics = do_evaluation(testloader, global_model, device)
     global_model.train()
 
+    cur_ig = calc_ig(metrics['loss'], models_val_loss, total_num_of_data_clients, num_of_data_clients)
+
+    participants_score, ig = update_participants_score(participants_score, cur_ig, ig, eg_momentum)
+
+    save_dict_file('.tmp/ig.pkl', ig)
+    save_dict_file('.tmp/participants_score.pkl', participants_score)
+    save_dict_file('.tmp/not_selected_participants.pkl', not_selected_participants)
+
+    print(participants_score)
+
     # accuracy = (accuracy / len(testloader)) * 100
     print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
     print('Precision of the network on the 10000 test images: %f %%' % metrics['precision'])
     print('Sensitivity of the network on the 10000 test images: %f %%' % metrics['sensitivity'])
     print('Specificity of the network on the 10000 test images: %f %%' % metrics['specificity'])
     print('F1-score of the network on the 10000 test images: %f %%' % metrics['f1score'])
+    print(f'Information Gain: {ig}')
+    print(f'Participants loss: {models_val_loss}')
     # acc_train.append(accuracy)
 
     wandb_dict[args.mode + "_acc"] = metrics['accuracy']

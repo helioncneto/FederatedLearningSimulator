@@ -6,57 +6,10 @@ import os
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from libs.evaluation.metrics import Evaluator
+from utils.helper import save, do_evaluation
 
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-
-def save(path, metric):
-    exists = False
-    if os.path.exists(path):
-        if os.stat(path).st_size > 0:
-            exists = True
-    file = open(path, 'a')
-    if exists:
-        file.write(',')
-    file.write(str(metric))
-    file.close()
-
-def do_evaluation(testloader, model, device):
-    model.eval()
-    # correct = 0
-    # total = 0
-    accuracy = 0
-    with torch.no_grad():
-        preds = np.array([])
-        full_lables = np.array([])
-        first = True
-        for x, labels in testloader:
-            # print('loading data from testloader')
-            x, labels = x.to(device), labels.to(device)
-            # print('sending to the model..')
-            outputs = model(x)
-            # print('checking the classes')
-            top_p, top_class = outputs.topk(1, dim=1)
-            if first:
-                preds = top_class.numpy()
-                full_lables = copy.deepcopy(labels)
-                first = False
-            else:
-                preds = np.concatenate((preds, top_class.numpy()))
-                full_lables = np.concatenate((full_lables, labels))
-
-            # print('evaluating the correctness')
-            # equals = top_class == labels.view(*top_class.shape)
-            # print('calculating accuracy')
-            # accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
-    print('calculating avg accuracy')
-    evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
-    metrics = evaluator.run_metrics(preds, full_lables)
-    # acc_train.append(accuracy)
-
-    model.train()
-    return metrics
-
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):

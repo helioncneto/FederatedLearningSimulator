@@ -10,65 +10,7 @@ import torch
 import os
 import numpy as np
 from libs.evaluation.metrics import Evaluator
-
-def save(path, metric):
-    exists = False
-    if os.path.exists(path):
-        if os.stat(path).st_size > 0:
-            exists = True
-    file = open(path, 'a')
-    if exists:
-        file.write(',')
-    file.write(str(metric))
-    file.close()
-
-def do_evaluation(testloader, model, device: int, **kwargs) -> dict:
-    model.eval()
-    prev_model, loss_func, alpha, mu = None, None, None, None
-    check_kwargs = not kwargs
-    if not check_kwargs:
-        prev_model = kwargs['prev_model']
-        loss_func = kwargs['loss_func']
-        alpha = kwargs['alpha']
-        mu = kwargs['mu']
-    ce_loss_test = []
-    reg_loss_test = []
-    total_loss_test = []
-    preds = np.array([])
-    full_lables = np.array([])
-    first = True
-    with torch.no_grad():
-        for data in testloader:
-            x, labels = data[0].to(device), data[1].to(device)
-            outputs = model(x)
-            ce_loss = loss_func(outputs, labels)
-
-            ## Weight L2 loss
-            reg_loss = 0
-            fixed_params = {n: p for n, p in prev_model.named_parameters()}
-            for n, p in model.named_parameters():
-                reg_loss += ((p - fixed_params[n].detach()) ** 2).sum()
-
-            loss = alpha * ce_loss + 0.5 * mu * reg_loss
-
-            top_p, top_class = outputs.topk(1, dim=1)
-            if first:
-                preds = top_class.numpy()
-                full_lables = copy.deepcopy(labels)
-                first = False
-            else:
-                preds = np.concatenate((preds, top_class.numpy()))
-                full_lables = np.concatenate((full_lables, labels))
-
-            ce_loss_test.append(ce_loss.item())
-            reg_loss_test.append(reg_loss.item())
-            total_loss_test.append(loss.item())
-
-    print('calculating avg accuracy')
-    evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
-    metrics = evaluator.run_metrics(preds, full_lables)
-    model.train()
-    return metrics
+from utils.helper import save, do_evaluation
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):

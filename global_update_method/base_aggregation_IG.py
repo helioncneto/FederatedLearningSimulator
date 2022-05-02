@@ -1,77 +1,13 @@
 # coding: utf-8
-import copy
-import random
 from typing import Tuple
-
+from libs.methods.ig import selection_ig, update_participants_score, calc_ig
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import numpy as np
 import os
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
-from libs.evaluation.metrics import Evaluator
 from torch.utils.data import DataLoader, TensorDataset
-
-#classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-
-
-def save(path, metric):
-    exists = False
-    if os.path.exists(path):
-        if os.stat(path).st_size > 0:
-            exists = True
-    file = open(path, 'a')
-    if exists:
-        file.write(',')
-    file.write(str(metric))
-    file.close()
-
-
-def shuffle(arr: np.array) -> np.array:
-    np.random.shuffle(arr)
-    return arr
-
-
-def do_evaluation(testloader, model, device):
-    model.eval()
-    loss_func = nn.CrossEntropyLoss()
-    # correct = 0
-    # total = 0
-    accuracy = 0
-    batch_loss = []
-    with torch.no_grad():
-        preds = np.array([])
-        full_lables = np.array([])
-        first = True
-        for x, labels in testloader:
-            # print('loading data from testloader')
-            x, labels = x.to(device), labels.to(device)
-            # print('sending to the model..')
-            outputs = model(x)
-            val_loss = loss_func(outputs, labels)
-            batch_loss.append(val_loss.item())
-            # print('checking the classes')
-            top_p, top_class = outputs.topk(1, dim=1)
-            if first:
-                preds = top_class.numpy()
-                full_lables = copy.deepcopy(labels)
-                first = False
-            else:
-                preds = np.concatenate((preds, top_class.numpy()))
-                full_lables = np.concatenate((full_lables, labels))
-
-            # print('evaluating the correctness')
-            # equals = top_class == labels.view(*top_class.shape)
-            # print('calculating accuracy')
-            # accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
-        loss_avg = (sum(batch_loss) / len(batch_loss))
-    print('calculating avg accuracy')
-    evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
-    metrics = evaluator.run_metrics(preds, full_lables)
-    metrics['loss'] = loss_avg
-    # acc_train.append(accuracy)
-
-    model.train()
-    return metrics
+from utils.helper import save, shuffle, do_evaluation
 
 
 def gen_train_fake(samples: int = 10000, features: int = 77, interval: Tuple[int, int] = (0, 1),
@@ -86,15 +22,6 @@ def gen_train_fake(samples: int = 10000, features: int = 77, interval: Tuple[int
     trainset = TensorDataset(train_tensor_x, train_tensor_y)
     # dataloader = DataLoader(trainset, batch_size=batch, shuffle=False)
     return trainset
-
-
-def calc_ig(parent_entropy: float, child_entropy: dict, parent_size: int, child_size: list) -> dict:
-    ig = {}
-    for idx, (client_id, child) in enumerate(child_entropy.items()):
-        w = child_size[idx]/parent_size
-        curr_ig = -np.log(parent_entropy) + (-np.log(w * child))
-        ig[client_id] = curr_ig
-    return ig
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
@@ -148,9 +75,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         eg_momentum = 0.9
 
         # Sample participating agents for this global round
-        selected_participants = []
-        selection_helper = copy.deepcopy(participants_score)
-
+        '''selected_participants = []
+        selection_helper = copy.deepcopy(participants_score)'''
+        selected_participants = None
         if epoch == 0 or args.participation_rate >= 1:
             print('Selecting the participants')
             #selected_participants = np.random.choice(range(args.num_of_clients + selected_participants_fake_num),
@@ -160,33 +87,10 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                                                      selected_participants_num,
                                                      replace=False)
             not_selected_participants = list(set(not_selected_participants) - set(selected_participants))
-
         elif args.participation_rate < 1:
-            for _ in range(selected_participants_num):
-                p = random.random()
-                if p < ep_greedy:
-                    print("Random selection")
-                    if len(not_selected_participants) != 0:
-                        selected = np.random.choice(not_selected_participants)
-                    else:
-                        selected = np.random.choice(list(selection_helper.keys()))
-                    if selected in not_selected_participants:
-                        not_selected_participants.remove(selected)
-                    selection_helper.pop(selected)
-                    selected_participants.append(selected)
-                else:
-                    # Select the best participant
-                    print("Greedy selection")
-                    selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[0]
-                    if selected in not_selected_participants:
-                        not_selected_participants.remove(selected)
-                    selection_helper.pop(selected)
-                    selected_participants.append(selected)
-            ## Selecting fake participants
-            #selected_participants_fake = np.random.choice(range(args.num_of_clients),
-                                                     #selected_participants_fake_num,
-                                                     #replace=False)
-
+            selected_participants, not_selected_participants = selection_ig(selected_participants_num, ep_greedy,
+                                                                            not_selected_participants,
+                                                                            participants_score)
         print(' Participants IDS: ', selected_participants)
         print(f"This is global {epoch} epoch")
         if selected_participants is None:
@@ -256,7 +160,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         model.train()
         cur_ig = calc_ig(metrics['loss'], models_val_loss, total_num_of_data_clients, num_of_data_clients)
 
-        for client_id, client_ig in cur_ig.items():
+        participants_score, ig = update_participants_score(participants_score, cur_ig, ig, eg_momentum)
+
+        '''for client_id, client_ig in cur_ig.items():
             if client_id not in ig.keys():
                 ig[client_id] = []
                 ig[client_id].append(client_ig)
@@ -266,7 +172,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                 participants_score[client_id] = ig[client_id]
             else:
                 delta_term = sum(ig[client_id][:-1]) / len(ig[client_id][:-1])
-                participants_score[client_id] = ((1 - eg_momentum) * delta_term) + (eg_momentum * ig[client_id][-1])
+                participants_score[client_id] = ((1 - eg_momentum) * delta_term) + (eg_momentum * ig[client_id][-1])'''
             #participants_score[client_id] = sum(ig[client_id]) / len(ig[client_id])
 
         print(participants_score)

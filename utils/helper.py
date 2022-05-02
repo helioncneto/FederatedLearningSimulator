@@ -1,14 +1,24 @@
+import copy
+import os
+import numpy as np
 import models
 import torch.optim as optim
 import torch
 import torch.nn as nn
 
-__all__ = ['l2norm','count_label_distribution','check_data_distribution','check_data_distribution_aug','feature_extractor','classifier','get_model', 'get_optimizer', 'get_scheduler']
+from libs.evaluation.metrics import Evaluator
+
+__all__ = ['l2norm', 'count_label_distribution', 'check_data_distribution', 'check_data_distribution_aug',
+           'feature_extractor', 'classifier', 'get_model', 'get_optimizer', 'get_scheduler', 'save', 'shuffle',
+           'do_evaluation']
+
+
 
 
 def l2norm(x,y):
     z= (((x-y)**2).sum())
     return z/(1+len(x))
+
 
 class feature_extractor(nn.Module):
             def __init__(self,model,classifier_index=-1):
@@ -33,6 +43,7 @@ class classifier(nn.Module):
                 x = self.layers(x)
                 return x
 
+
 def count_label_distribution(labels,class_num:int=10,default_dist:torch.tensor=None):
     if default_dist!=None:
         default=default_dist
@@ -43,6 +54,7 @@ def count_label_distribution(labels,class_num:int=10,default_dist:torch.tensor=N
         data_distribution[label]+=1 
     data_distribution=data_distribution/data_distribution.sum()
     return data_distribution
+
 
 def check_data_distribution(dataloader,class_num:int=10,default_dist:torch.tensor=None):
     if default_dist!=None:
@@ -55,6 +67,7 @@ def check_data_distribution(dataloader,class_num:int=10,default_dist:torch.tenso
             data_distribution[i]+=1 
     data_distribution=data_distribution/data_distribution.sum()
     return data_distribution
+
 
 def check_data_distribution_aug(dataloader,class_num:int=10,default_dist:torch.tensor=None):
     if default_dist!=None:
@@ -103,6 +116,54 @@ def get_optimizer(args, parameters):
         return
     return optimizer
 
+
+def save(path, metric):
+    exists = False
+    if os.path.exists(path):
+        if os.stat(path).st_size > 0:
+            exists = True
+    file = open(path, 'a')
+    if exists:
+        file.write(',')
+    file.write(str(metric))
+    file.close()
+
+
+def shuffle(arr: np.array) -> np.array:
+    np.random.shuffle(arr)
+    return arr
+
+
+def do_evaluation(testloader, model, device: int, **kwargs) -> dict:
+    model.eval()
+    loss_func = nn.CrossEntropyLoss()
+    batch_loss = []
+    with torch.no_grad():
+        preds = np.array([])
+        full_lables = np.array([])
+        first = True
+        for x, labels in testloader:
+            x, labels = x.to(device), labels.to(device)
+            outputs = model(x)
+            val_loss = loss_func(outputs, labels)
+            batch_loss.append(val_loss.item())
+            top_p, top_class = outputs.topk(1, dim=1)
+            if first:
+                preds = top_class.numpy()
+                full_lables = copy.deepcopy(labels)
+                first = False
+            else:
+                preds = np.concatenate((preds, top_class.numpy()))
+                full_lables = np.concatenate((full_lables, labels))
+
+        loss_avg = (sum(batch_loss) / len(batch_loss))
+
+    print('calculating avg accuracy')
+    evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
+    metrics = evaluator.run_metrics(preds, full_lables)
+    metrics['loss'] = loss_avg
+    model.train()
+    return metrics
 
 
 def get_scheduler(optimizer, args):
