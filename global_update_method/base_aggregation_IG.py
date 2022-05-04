@@ -62,7 +62,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     not_selected_participants = list(participants_score.keys())
     #ep_greedy = args.epsilon_greedy
     ep_greedy = 1
-    ep_greedy_decay = pow(0.001, 1/args.global_epochs)
+    ep_greedy_decay = pow(0.01, 1/args.global_epochs)
 
     for epoch in range(args.global_epochs):
         print('starting a new epoch')

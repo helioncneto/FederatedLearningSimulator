@@ -89,6 +89,9 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
 
     selected_participants_num = kwargs['selected_participants_num']
     ep_greedy = kwargs['ep_greedy']
+    ep_greedy_decay = pow(0.01, 1 / args.global_epochs)
+    if epoch != 1:
+        ep_greedy = (ep_greedy * ep_greedy_decay) ** epoch
     not_selected_participants = load_from_file('.tmp/not_selected_participants.pkl')
     participants_score = load_from_file('.tmp/participants_score.pkl')
     ig = load_from_file('.tmp/ig.pkl')
