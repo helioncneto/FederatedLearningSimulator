@@ -101,7 +101,7 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
 
     for user in selected_participants:
         num_of_data_clients.append(len(dataset[user]))
-        local_setting = local_update(args=args, lr=lr, local_epoch=args.local_epochs, device=device,
+        local_setting = local_update(args=args, lr=lr, local_epoch=local_epochs, device=device,
                                      batch_size=args.batch_size, dataset=trainset, idxs=dataset[user],
                                      alpha=this_alpha)
         weight, loss = local_setting.train(copy.deepcopy(sending_model).to(device), epoch)
