@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import os
+
 from libs.methods.FedSA import SimulatedAnnealing
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import wandb
@@ -126,12 +128,12 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     if args.use_wandb:
         print('logging to wandb...')
         wandb.log(wandb_dict)
-    save(args.global_method + "_acc", wandb_dict[args.mode + "_acc"])
-    save(args.global_method + "_prec", wandb_dict[args.mode + "_prec"])
-    save(args.global_method + "_sens", wandb_dict[args.mode + "_sens"])
-    save(args.global_method + "_spec", wandb_dict[args.mode + "_spec"])
-    save(args.global_method + "_f1", wandb_dict[args.mode + "_f1"])
-    save(args.global_method + "_loss", wandb_dict[args.mode + "_loss"])
+    save(os.path.join(args.eval_path, args.global_method + "_acc"), wandb_dict[args.mode + "_acc"])
+    save(os.path.join(args.eval_path, args.global_method + "_prec"), wandb_dict[args.mode + "_prec"])
+    save(os.path.join(args.eval_path, args.global_method + "_sens"), wandb_dict[args.mode + "_sens"])
+    save(os.path.join(args.eval_path, args.global_method + "_spec"), wandb_dict[args.mode + "_spec"])
+    save(os.path.join(args.eval_path, args.global_method + "_f1"), wandb_dict[args.mode + "_f1"])
+    save(os.path.join(args.eval_path, args.global_method + "_loss"), wandb_dict[args.mode + "_loss"])
 
     if args.alpha_mul_epoch:
         this_alpha = args.alpha * (epoch + 1)
