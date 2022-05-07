@@ -103,13 +103,13 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         sum_rep = sum(sum_rep)
         avg = sum_rep / len(all_participants)
         for participant in all_participants:
-            if epoch == 1:
+            if epoch == 0:
                 reputation[participant][epoch]["score"] = (reputation[participant][epoch]["accuracy"] - avg) + (
                         reputation[participant][epoch]["accuracy"] - metrics_temp['accuracy'])
             else:
                 reputation[participant][epoch]["score"] = (reputation[participant][epoch]["accuracy"] - avg) + (
                             reputation[participant][epoch]["accuracy"] - metrics_temp['accuracy']) + (
-                        reputation[participant][epoch]["accuracy"] - global_metrics[epoch])
+                        reputation[participant][epoch]["accuracy"] - global_metrics[epoch - 1])
 
             if reputation[participant][epoch]["score"] < 0:
                 reputation[participant][epoch]["selected"] = False
@@ -157,6 +157,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         wandb_dict[args.mode + "_f1"] = metrics['f1score']
         wandb_dict[args.mode + '_loss'] = loss_avg
         wandb_dict['lr'] = this_lr
+        global_metrics.append(metrics['accuracy'])
         if args.use_wandb:
             print('logging to wandb...')
             wandb.log(wandb_dict)
