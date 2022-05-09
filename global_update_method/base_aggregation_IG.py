@@ -3,7 +3,6 @@ from typing import Tuple
 from libs.methods.ig import selection_ig, update_participants_score, calc_ig
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import numpy as np
-import os
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from torch.utils.data import DataLoader, TensorDataset
@@ -199,12 +198,12 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         if args.use_wandb:
             print('logging to wandb...')
             wandb.log(wandb_dict)
-        save(os.path.join(args.eval_path, args.global_method + "_acc"), wandb_dict[args.mode + "_acc"] )
-        save(os.path.join(args.eval_path, args.global_method + "_prec"), wandb_dict[args.mode + "_prec"])
-        save(os.path.join(args.eval_path, args.global_method + "_sens"), wandb_dict[args.mode + "_sens"])
-        save(os.path.join(args.eval_path, args.global_method + "_spec"), wandb_dict[args.mode + "_spec"])
-        save(os.path.join(args.eval_path, args.global_method + "_f1"), wandb_dict[args.mode + "_f1"])
-        save(os.path.join(args.eval_path, args.global_method + "_loss"), wandb_dict[args.mode + "_loss"])
+        save((args.eval_path, args.global_method + "_acc"), wandb_dict[args.mode + "_acc"] )
+        save((args.eval_path, args.global_method + "_prec"), wandb_dict[args.mode + "_prec"])
+        save((args.eval_path, args.global_method + "_sens"), wandb_dict[args.mode + "_sens"])
+        save((args.eval_path, args.global_method + "_spec"), wandb_dict[args.mode + "_spec"])
+        save((args.eval_path, args.global_method + "_f1"), wandb_dict[args.mode + "_f1"])
+        save((args.eval_path, args.global_method + "_loss"), wandb_dict[args.mode + "_loss"])
         print('Decay LR...')
         this_lr *= args.learning_rate_decay
         if args.alpha_mul_epoch:
@@ -227,9 +226,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         print('Final Specificity of the network on the 10000 test images: %f %%' % test_metric['specificity'])
         print('Final F1-score of the network on the 10000 test images: %f %%' % test_metric['f1score'])
 
-        save(os.path.join(args.eval_path, args.mode + "_test_acc"), test_metric['accuracy'])
-        save(os.path.join(args.eval_path, args.mode + "_test_prec"), test_metric['precision'])
-        save(os.path.join(args.eval_path, args.mode + "_test_sens"), test_metric['sensitivity'])
-        save(os.path.join(args.eval_path, args.mode + "_test_spec"), test_metric['specificity'])
-        save(os.path.join(args.eval_path, args.mode + "_test_f1"), test_metric['f1score'])
-        save(os.path.join(args.eval_path, args.mode + "_ig"), ig)
+        save((args.eval_path, args.mode + "_test_acc"), test_metric['accuracy'])
+        save((args.eval_path, args.mode + "_test_prec"), test_metric['precision'])
+        save((args.eval_path, args.mode + "_test_sens"), test_metric['sensitivity'])
+        save((args.eval_path, args.mode + "_test_spec"), test_metric['specificity'])
+        save((args.eval_path, args.mode + "_test_f1"), test_metric['f1score'])
+        save((args.eval_path, args.mode + "_ig"), ig)

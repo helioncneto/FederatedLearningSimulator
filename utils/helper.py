@@ -117,7 +117,11 @@ def get_optimizer(args, parameters):
     return optimizer
 
 
-def save(path, metric):
+def save(path_tuple: tuple, metric: float) -> None:
+    if len(path_tuple) == 1:
+        path = path_tuple[0]
+    else:
+        path = os.path.join(*path_tuple)
     exists = False
     if os.path.exists(path):
         if os.stat(path).st_size > 0:

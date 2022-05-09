@@ -47,11 +47,11 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         print('Final Specificity of the network on the 10000 test images: %f %%' % test_metric['specificity'])
         print('Final F1-score of the network on the 10000 test images: %f %%' % test_metric['f1score'])
 
-        save(args.global_method + "_test_acc", test_metric['accuracy'])
-        save(args.global_method + "_test_prec", test_metric['precision'])
-        save(args.global_method + "_test_sens", test_metric['sensitivity'])
-        save(args.global_method + "_test_spec", test_metric['specificity'])
-        save(args.global_method + "_test_f1", test_metric['f1score'])
+        save((args.eval_path, args.global_method + "_test_acc"), test_metric['accuracy'])
+        save((args.eval_path, args.global_method + "_test_prec"), test_metric['precision'])
+        save((args.eval_path, args.global_method + "_test_sens"), test_metric['sensitivity'])
+        save((args.eval_path, args.global_method + "_test_spec"), test_metric['specificity'])
+        save((args.eval_path, args.global_method + "_test_f1"), test_metric['f1score'])
 
 
 def participants_train(X, global_model, dataset, epoch, kwargs):
@@ -128,12 +128,12 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     if args.use_wandb:
         print('logging to wandb...')
         wandb.log(wandb_dict)
-    save(os.path.join(args.eval_path, args.global_method + "_acc"), wandb_dict[args.mode + "_acc"])
-    save(os.path.join(args.eval_path, args.global_method + "_prec"), wandb_dict[args.mode + "_prec"])
-    save(os.path.join(args.eval_path, args.global_method + "_sens"), wandb_dict[args.mode + "_sens"])
-    save(os.path.join(args.eval_path, args.global_method + "_spec"), wandb_dict[args.mode + "_spec"])
-    save(os.path.join(args.eval_path, args.global_method + "_f1"), wandb_dict[args.mode + "_f1"])
-    save(os.path.join(args.eval_path, args.global_method + "_loss"), wandb_dict[args.mode + "_loss"])
+    save((args.eval_path, args.global_method + "_acc"), wandb_dict[args.mode + "_acc"])
+    save((args.eval_path, args.global_method + "_prec"), wandb_dict[args.mode + "_prec"])
+    save((args.eval_path, args.global_method + "_sens"), wandb_dict[args.mode + "_sens"])
+    save((args.eval_path, args.global_method + "_spec"), wandb_dict[args.mode + "_spec"])
+    save((args.eval_path, args.global_method + "_f1"), wandb_dict[args.mode + "_f1"])
+    save((args.eval_path, args.global_method + "_loss"), wandb_dict[args.mode + "_loss"])
 
     if args.alpha_mul_epoch:
         this_alpha = args.alpha * (epoch + 1)
