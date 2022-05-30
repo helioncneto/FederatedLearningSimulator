@@ -1,5 +1,6 @@
 name: fl_simulator
 channels:
+  - gurobi
   - pytorch
   - conda-forge
   - defaults
@@ -13,8 +14,8 @@ dependencies:
   - brotli-bin=1.0.9=h7f98852_5
   - brotlipy=0.7.0=py39h3811e60_1001
   - bzip2=1.0.8=h7b6447c_0
-  - ca-certificates=2022.3.29=h06a4308_0
-  - certifi=2021.10.8=py39h06a4308_2
+  - ca-certificates=2022.4.26=h06a4308_0
+  - certifi=2022.5.18.1=py39h06a4308_0
   - cffi=1.15.0=py39hd667e15_1
   - charset-normalizer=2.0.12=pyhd8ed1ab_0
   - click=7.1.2=pyh9f0ad1d_0
@@ -40,6 +41,7 @@ dependencies:
   - gnutls=3.6.15=he1e5248_0
   - gst-plugins-base=1.14.0=hbbd80ab_1
   - gstreamer=1.14.0=h28cd5cc_2
+  - gurobi=9.5.1=py39_0
   - icu=58.2=hf484d3e_1000
   - idna=3.3=pyhd8ed1ab_0
   - imageio=2.3.0=py_1
@@ -96,7 +98,7 @@ dependencies:
   - numpy-base=1.19.2=py39h2ae0177_0
   - olefile=0.46=pyhd3eb1b0_0
   - openh264=2.1.1=h4ff587b_0
-  - openssl=1.1.1n=h7f8727e_0
+  - openssl=1.1.1o=h7f8727e_0
   - packaging=21.3=pyhd8ed1ab_0
   - pandas=1.4.1=py39h295c915_0
   - pathtools=0.1.2=py_1
@@ -156,4 +158,4 @@ dependencies:
   - zstd=1.4.9=haebb681_0
   - pip:
     - wget==3.2
-prefix: /home/users/donascih/anaconda3/envs/fl_simulator
+prefix: /home/heliocunha/anaconda3/envs/fl_simulator
