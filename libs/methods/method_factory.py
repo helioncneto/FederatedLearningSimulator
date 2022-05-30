@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from global_update_method import base_aggregation, delta_aggregation_slowmo, adam_aggregation, delta_aggregation, \
     delta_aggregation_fedDyn, delta_aggregation_AGM, base_aggregation_fedSA, delta_aggregation_AGM_fedSA, \
-    base_aggregation_IG, base_aggregation_fedSA_IG, delta_aggregation_AGM_fedSA_IG, base_aggregation_reputation
+    base_aggregation_IG, base_aggregation_fedSA_IG, delta_aggregation_AGM_fedSA_IG, base_aggregation_reputation, \
+    base_aggregation_Oort
 
 from local_update_method import base, weight_l2, fedCM, fedDyn, fedAGM
 
@@ -105,6 +106,14 @@ class GlobalBaseAggregationReputationFactory(IGlobalMethodFactory):
     def get_global_method(self):
         return base_aggregation_reputation.GlobalUpdate
 
+
+class GlobalBaseAggregationOortFactory(IGlobalMethodFactory):
+    """Method for returning the Base global aggregation method with Oort baseline"""
+
+    def get_global_method(self):
+        return base_aggregation_Oort.GlobalUpdate
+
+
 class LocalBaseFactory(ILocalMethodFactory):
     """Method for returning the FedAVG local update method"""
 
@@ -159,6 +168,7 @@ GLOBALAGGREGATION_LOOKUP_TABLE = {'base_avg': GlobalBaseAggregationFactory(),
                                   "FedAvg_IG": GlobalBaseAggregationIGFactory(),
                                   "FedSA_IG": GlobalBaseAggregationFedSAIGFactory(),
                                   "FedSA_AGM_IG": GlobalDeltaAggregationFedSAIGFactory(),
-                                  "FedAvg_Reputation":GlobalBaseAggregationReputationFactory()
+                                  "FedAvg_Reputation":GlobalBaseAggregationReputationFactory(),
+                                  "FedAvg_Oort": GlobalBaseAggregationOortFactory(),
                                   }
 

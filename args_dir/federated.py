@@ -179,8 +179,17 @@ def parse_arguments():
         default=0.5,
         type=float,
         metavar="N",
-        help="number of participation rate at each global epoch",
+        help="epsilon greedy value",
     )
+
+    parser.add_argument(
+        "--last_epsilon_greedy",
+        default=0.01,
+        type=float,
+        metavar="N",
+        help="The last epsilon greedy valuie",
+    )
+
     parser.add_argument(
         "--participation_rate",
         default=0.1,

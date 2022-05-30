@@ -50,7 +50,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     sa.run(epoch=args.global_epochs, obj=participants_train, model=model, data=dataset, trainset=trainset,
            testloader=testloader, local_update=local_update, device=device, loss_train=loss_train,
            acc_train=acc_train, args=args, global_delta=global_delta, this_tau=this_tau,
-           selected_participants_num=selected_participants_num, ep_greedy=0.9,
+           selected_participants_num=selected_participants_num, ep_greedy=1,
            not_selected_participants=not_selected_participants, participants_score=participants_score, ig=ig)
 
 
@@ -98,7 +98,7 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
 
     selected_participants_num = kwargs['selected_participants_num']
     ep_greedy = kwargs['ep_greedy']
-    ep_greedy_decay = pow(0.01, 1 / args.global_epochs)
+    ep_greedy_decay = pow(args.last_epsilon_greedy, 1 / args.global_epochs)
     if epoch != 1:
         ep_greedy = (ep_greedy * ep_greedy_decay) ** epoch
     not_selected_participants = load_from_file('.tmp/not_selected_participants.pkl')

@@ -1,5 +1,4 @@
-
-
+import yaml
 
 class Config():
     def __init__(self, atributes):
@@ -13,6 +12,13 @@ class Config():
         assert(mandatory.issubset(set(atributes.keys())))
 
 
+class Args:
+    def __init__(self, yaml_dict):
+        self.__dict__ = yaml_dict
 
 
+def load_yaml_conf(yaml_file):
+    with open(yaml_file) as f:
+        data = yaml.load(f, Loader=yaml.FullLoader)
+    return Args(data)
         
