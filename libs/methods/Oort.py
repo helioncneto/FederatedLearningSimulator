@@ -216,7 +216,7 @@ class _training_selector:
         self.exploration = max(self.exploration*self.decay_factor, self.exploration_min)
         exploitLen = min(int(numOfSamples*(1.0 - self.exploration)), len(clientLakes) - 1)
 
-        # take the top-k, and then sample by probability, take 95% of the cut-off loss
+        # take the top-k, and then sample by probability, take 95% of the cut-off loss.
         sortedClientUtil = sorted(scores, key=scores.get, reverse=True)
 
         # take cut-off utility
