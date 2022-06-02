@@ -149,26 +149,26 @@ class LocalFedAGMFactory(ILocalMethodFactory):
         return fedAGM.LocalUpdate
 
 
-LOCALUPDATE_LOOKUP_TABLE = {'Fedavg': LocalBaseFactory(),
-                            'FedProx': LocalFedProxFactory(),
-                            'FedCM': LocalFedCMFactory(),
-                            'FedDyn': LocalFedDynFactory(),
-                            'FedAGM':  LocalFedAGMFactory()
+LOCALUPDATE_LOOKUP_TABLE = {'fedavg': LocalBaseFactory(),
+                            'fedprox': LocalFedProxFactory(),
+                            'fedcm': LocalFedCMFactory(),
+                            'feddyn': LocalFedDynFactory(),
+                            'fedagm':  LocalFedAGMFactory()
                             }
 
 
-GLOBALAGGREGATION_LOOKUP_TABLE = {'base_avg': GlobalBaseAggregationFactory(),
-                                  'SlowMo': GlobalDeltaAggregationSlowmoFactory(),
+GLOBALAGGREGATION_LOOKUP_TABLE = {'fedavg': GlobalBaseAggregationFactory(),
+                                  'slowmo': GlobalDeltaAggregationSlowmoFactory(),
                                   'global_adam': GlobalAdamAggregationFactory(),
                                   'global_delta': GlobalDeltaAggregationFactory(),
-                                  'FedDyn': GlobalDeltaAggregationFedDynFactory(),
-                                  'FedAGM':  GlobalDeltaAggregationFedAGMFactory(),
-                                  'FedSA':  GlobalBaseAggregationFedSAFactory(),
-                                  'FedSA_AGM': GlobalDeltaAggregationFedSAFactory(),
-                                  "FedAvg_IG": GlobalBaseAggregationIGFactory(),
-                                  "FedSA_IG": GlobalBaseAggregationFedSAIGFactory(),
-                                  "FedSA_AGM_IG": GlobalDeltaAggregationFedSAIGFactory(),
-                                  "FedAvg_Reputation":GlobalBaseAggregationReputationFactory(),
-                                  "FedAvg_Oort": GlobalBaseAggregationOortFactory(),
+                                  'feddyn': GlobalDeltaAggregationFedDynFactory(),
+                                  'fedagm':  GlobalDeltaAggregationFedAGMFactory(),
+                                  'fedsa':  GlobalBaseAggregationFedSAFactory(),
+                                  'fedsa_agm': GlobalDeltaAggregationFedSAFactory(),
+                                  "fedavg_ig": GlobalBaseAggregationIGFactory(),
+                                  "fedsa_ig": GlobalBaseAggregationFedSAIGFactory(),
+                                  "fedsa_agm_ig": GlobalDeltaAggregationFedSAIGFactory(),
+                                  "fedavg_reputation": GlobalBaseAggregationReputationFactory(),
+                                  "fedavg_oort": GlobalBaseAggregationOortFactory()
                                   }
 

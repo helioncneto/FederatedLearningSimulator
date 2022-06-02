@@ -1,11 +1,12 @@
 # coding: utf-8
 from torch import nn
+from torch.utils.data import DataLoader
 
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 
 from libs.methods.FedSA import SimulatedAnnealing
 from libs.methods.ig import save_dict_file, load_from_file, selection_ig, update_participants_score, calc_ig
-from utils import get_scheduler, get_optimizer, get_model, get_dataset
+from utils import get_scheduler, get_optimizer, get_model, get_dataset, DatasetSplit
 import wandb
 import copy
 import torch
@@ -125,7 +126,7 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     num_of_data_clients = []
     this_alpha = args.alpha
     local_weight = []
-    local_loss = []
+    local_loss = {}
     local_delta = []
     global_weight = copy.deepcopy(global_model.state_dict())
 
@@ -137,7 +138,7 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     else:
         pass'''
     print(f"This is global {epoch} epoch")
-    models_val_loss = {}
+    #models_val_loss = {}
 
     # AGM server model -> lookahead with global momentum
     sending_model_dict = copy.deepcopy(global_model.state_dict())
@@ -155,12 +156,12 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
         weight, loss = local_setting.train(copy.deepcopy(sending_model).to(device), epoch)
         local_K.append(local_setting.K)
         local_weight.append(copy.deepcopy(weight))
-        local_loss.append(copy.deepcopy(loss))
-        local_model = copy.deepcopy(global_model).to(device)
-        local_model.load_state_dict(weight)
-        local_model.eval()
+        local_loss[participant] = copy.deepcopy(loss)
+        #local_model = copy.deepcopy(global_model).to(device)
+        #local_model.load_state_dict(weight)
+        #local_model.eval()
 
-        batch_loss = []
+        '''batch_loss = []
         with torch.no_grad():
             for x, labels in testloader:
                 x, labels = x.to(device), labels.to(device)
@@ -168,7 +169,7 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
                 local_val_loss = loss_func(outputs, labels)
                 batch_loss.append(local_val_loss.item())
             models_val_loss[participant] = (sum(batch_loss) / len(batch_loss))
-
+            '''
         # Store local delta
         delta = {}
         for key in weight.keys():
@@ -196,12 +197,12 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
         global_delta[key] = global_delta[key] / (-1 * total_num_of_data_clients)
 
     global_model.load_state_dict(FedAvg_weight)
-    loss_avg = sum(local_loss) / len(local_loss)
+    loss_avg = sum(local_loss.values()) / len(local_loss)
     print(' num_of_data_clients : ', num_of_data_clients)
     print(' Participants IDS: ', selected_participants)
     print(' Average loss {:.3f}'.format(loss_avg))
     loss_train.append(loss_avg)
-    loss_func = torch.nn.NLLLoss()
+    #loss_func = torch.nn.NLLLoss()
 
     prev_model = copy.deepcopy(global_model)
     prev_model.load_state_dict(global_weight)
@@ -209,11 +210,26 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     global_model.eval()
     #metrics = do_evaluation(testloader=testloader, model=global_model, device=device, loss_func=loss_func,
                                 #prev_model=prev_model, alpha=args.alpha, mu=args.mu)
-    metrics = do_evaluation(testloader, global_model, device)
+
+    # Calculating the Global loss
+    global_losses = []
+    global_model.eval()
+
+    for participant in selected_participants:
+        participant_dataset_loader = DataLoader(DatasetSplit(trainset, dataset[participant]),
+                                                batch_size=args.batch_size, shuffle=True)
+        current_global_loss = do_evaluation(testloader=participant_dataset_loader, model=global_model, device=device,
+                                            evaluate=False)
+        global_losses.append(current_global_loss['loss'])
+
+    global_loss = sum(global_losses) / len(global_losses)
+
+    print('performing the evaluation')
+    metrics = do_evaluation(testloader=testloader, model=global_model, device=device)
 
     global_model.train()
 
-    cur_ig = calc_ig(metrics['loss'], models_val_loss, total_num_of_data_clients, num_of_data_clients)
+    cur_ig = calc_ig(global_loss, local_loss, total_num_of_data_clients, num_of_data_clients)
 
     participants_score, ig = update_participants_score(participants_score, cur_ig, ig, eg_momentum)
 

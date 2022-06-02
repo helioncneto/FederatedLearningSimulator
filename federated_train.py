@@ -70,12 +70,14 @@ def main():
         valloader = DataLoader(valset, batch_size=args.batch_size,
                                 shuffle=False, num_workers=args.workers)
         try:
-            local_update = LOCALUPDATE_LOOKUP_TABLE[args.method].get_local_method()
+            method = args.method.casefold()
+            local_update = LOCALUPDATE_LOOKUP_TABLE[method].get_local_method()
         except KeyError:
             print('The chosen method is not valid.')
             print(f'Valid methods: {list(LOCALUPDATE_LOOKUP_TABLE.keys())}')
         try:
-            global_update = GLOBALAGGREGATION_LOOKUP_TABLE[args.global_method].get_global_method()
+            global_method =args.global_method.casefold()
+            global_update = GLOBALAGGREGATION_LOOKUP_TABLE[global_method].get_global_method()
         except KeyError:
             print('The chosen global method is not valid.')
             print(f'Valid global methods: {list(GLOBALAGGREGATION_LOOKUP_TABLE.keys())}')

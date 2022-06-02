@@ -138,7 +138,7 @@ def shuffle(arr: np.array) -> np.array:
     return arr
 
 
-def do_evaluation(testloader, model, device: int, **kwargs) -> dict:
+def do_evaluation(testloader, model, device: int, evaluate: bool = True) -> dict:
     model.eval()
     loss_func = nn.CrossEntropyLoss()
     batch_loss = []
@@ -162,11 +162,14 @@ def do_evaluation(testloader, model, device: int, **kwargs) -> dict:
 
         loss_avg = (sum(batch_loss) / len(batch_loss))
 
-    print('calculating avg accuracy')
-    evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
-    metrics = evaluator.run_metrics(preds, full_lables)
-    metrics['loss'] = loss_avg
-    model.train()
+    if evaluate:
+        print('calculating avg accuracy')
+        evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
+        metrics = evaluator.run_metrics(preds, full_lables)
+        metrics['loss'] = loss_avg
+        model.train()
+    else:
+        metrics = {'loss': loss_avg}
     return metrics
 
 
