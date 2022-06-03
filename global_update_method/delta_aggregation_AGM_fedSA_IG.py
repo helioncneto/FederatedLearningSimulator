@@ -45,7 +45,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     for key in global_delta.keys():
         global_delta[key] = torch.zeros_like(global_delta[key])
 
-    sa = SimulatedAnnealing(initial_temperature=0.8, cooling=0.05, lr=(0.001, 0.1), local_update=(0, 15),
+    sa = SimulatedAnnealing(initial_temperature=0.8, cooling=0.05, lr=(0.001, 0.1), local_update=(1, 15),
                             participants=(0, args.num_of_clients - 1, selected_participants_num), computing_time=1,
                             threshold=0.01)
     sa.run(epoch=args.global_epochs, obj=participants_train, model=model, data=dataset, trainset=trainset,
