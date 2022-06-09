@@ -1,5 +1,8 @@
 import copy
 import os
+from collections import Counter
+from functools import reduce
+
 import numpy as np
 import models
 import torch.optim as optim
@@ -138,16 +141,20 @@ def shuffle(arr: np.array) -> np.array:
     return arr
 
 
-def do_evaluation(testloader, model, device: int, evaluate: bool = True) -> dict:
+def do_evaluation(testloader, model, device: int, evaluate: bool = True, calc_entropy=False) -> dict:
     model.eval()
     loss_func = nn.CrossEntropyLoss()
     batch_loss = []
+    balance = Counter()
     with torch.no_grad():
         preds = np.array([])
         full_lables = np.array([])
         first = True
         for x, labels in testloader:
             x, labels = x.to(device), labels.to(device)
+            if calc_entropy:
+                for label in labels:
+                    balance[label] += 1
             outputs = model(x)
             val_loss = loss_func(outputs, labels)
             batch_loss.append(val_loss.item())
@@ -162,6 +169,13 @@ def do_evaluation(testloader, model, device: int, evaluate: bool = True) -> dict
 
         loss_avg = (sum(batch_loss) / len(batch_loss))
 
+        #for cl, qtd in balance.items():
+
+        #entropy = -(a * np.log2(a))
+        if calc_entropy:
+            p_s = [value/sum(balance.values()) for value in balance.values()]
+            entropy = reduce(lambda a, b: -(a * np.log2(a) + b * np.log2(b)), p_s)
+
     if evaluate:
         print('calculating avg accuracy')
         evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
@@ -170,6 +184,9 @@ def do_evaluation(testloader, model, device: int, evaluate: bool = True) -> dict
         model.train()
     else:
         metrics = {'loss': loss_avg}
+
+    if calc_entropy:
+        metrics['entropy'] = entropy
     return metrics
 
 

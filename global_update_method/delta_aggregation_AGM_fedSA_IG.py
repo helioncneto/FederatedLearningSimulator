@@ -33,11 +33,17 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     participants_score = {idx: selected_participants_num / total_participants for idx in range(total_participants)}
     not_selected_participants_list = list(participants_score.keys())
     not_selected_participants = {"not_selected": not_selected_participants_list}
+    participants_count = {participant: 0 for participant in list(participants_score.keys())}
+    blocked = {}
     ig = {}
+    entropy = {}
 
     save_dict_file('.tmp/ig.pkl', ig)
     save_dict_file('.tmp/participants_score.pkl', participants_score)
     save_dict_file('.tmp/not_selected_participants.pkl', not_selected_participants)
+    save_dict_file('.tmp/participants_count.pkl', participants_count)
+    save_dict_file('.tmp/blocked.pkl', blocked)
+    save_dict_file('.tmp/entropy.pkl', entropy)
 
     this_tau = args.tau
     global_delta = copy.deepcopy(model.state_dict())
@@ -74,7 +80,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         save((args.eval_path, args.global_method + "_test_f1"), test_metric['f1score'])
 
 
-
 def participants_train(X, global_model, dataset, epoch, kwargs):
     wandb_dict = {}
     num_of_data_clients = []
@@ -104,7 +109,19 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
         ep_greedy = (ep_greedy * ep_greedy_decay) ** epoch
     not_selected_participants = load_from_file('.tmp/not_selected_participants.pkl')
     participants_score = load_from_file('.tmp/participants_score.pkl')
+    blocked = load_from_file('.tmp/blocked.pkl')
     ig = load_from_file('.tmp/ig.pkl')
+    participants_count = load_from_file('.tmp/participants_count.pkl')
+    entropy = load_from_file('.tmp/entropy.pkl')
+
+    if len(blocked) > 0:
+        parts_to_ublock = []
+        for part, since in blocked.items():
+            if since + int(20/10) <= epoch:
+                parts_to_ublock.append(part)
+                participants_count[part] = 0
+
+        [blocked.pop(part) for part in parts_to_ublock]
 
     if epoch == 1 or args.participation_rate >= 1:
         print('Selecting the participants')
@@ -122,7 +139,8 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
                                                                                         ep_greedy,
                                                                                         not_selected_participants[
                                                                                             "not_selected"],
-                                                                                        participants_score)
+                                                                                        participants_score,
+                                                                                        participants_count=participants_count)
     num_of_data_clients = []
     this_alpha = args.alpha
     local_weight = []
@@ -149,11 +167,15 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     sending_model.load_state_dict(sending_model_dict)
 
     for participant in selected_participants:
+        participants_count[participant] += 1
+        if participants_count[participant] >= 3:
+            blocked[participant] = epoch
+        print(f'Training participant: {participant}')
         num_of_data_clients.append(len(dataset[participant]))
         local_setting = local_update(args=args, lr=lr, local_epoch=local_epochs, device=device,
                                      batch_size=args.batch_size, dataset=trainset, idxs=dataset[participant],
                                      alpha=this_alpha)
-        weight, loss = local_setting.train(copy.deepcopy(sending_model).to(device), epoch)
+        weight, loss = local_setting.train(copy.deepcopy(sending_model).to(device))
         local_K.append(local_setting.K)
         local_weight.append(copy.deepcopy(weight))
         local_loss[participant] = copy.deepcopy(loss)
@@ -218,26 +240,36 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     for participant in selected_participants:
         participant_dataset_loader = DataLoader(DatasetSplit(trainset, dataset[participant]),
                                                 batch_size=args.batch_size, shuffle=True)
-        current_global_loss = do_evaluation(testloader=participant_dataset_loader, model=global_model, device=device,
-                                            evaluate=False)
-        global_losses.append(current_global_loss['loss'])
+        if participant in entropy.keys():
+            current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=global_model, device=device,
+                                                evaluate=False)
+        else:
+            current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=global_model,
+                                                   device=device, evaluate=False, calc_entropy=True)
+            entropy[participant] = current_global_metrics['entropy']
+        global_losses.append(current_global_metrics['loss'])
+        print(f'=> Participant {participant} loss: {current_global_metrics["loss"]}')
 
     global_loss = sum(global_losses) / len(global_losses)
+    print(f'=> Mean global loss: {global_loss}')
 
     print('performing the evaluation')
     metrics = do_evaluation(testloader=testloader, model=global_model, device=device)
 
     global_model.train()
 
-    cur_ig = calc_ig(global_loss, local_loss, total_num_of_data_clients, num_of_data_clients)
+    cur_ig = calc_ig(global_loss, local_loss, entropy)
 
     participants_score, ig = update_participants_score(participants_score, cur_ig, ig, eg_momentum)
 
     save_dict_file('.tmp/ig.pkl', ig)
     save_dict_file('.tmp/participants_score.pkl', participants_score)
     save_dict_file('.tmp/not_selected_participants.pkl', not_selected_participants)
+    save_dict_file('.tmp/blocked.pkl', blocked)
+    save_dict_file('.tmp/participants_count.pkl', participants_count)
+    save_dict_file('.tmp/entropy.pkl', entropy)
 
-    print(participants_score)
+    print(f'Participants score: {participants_score}')
 
     # accuracy = (accuracy / len(testloader)) * 100
     print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
@@ -245,6 +277,7 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     print('Sensitivity of the network on the 10000 test images: %f %%' % metrics['sensitivity'])
     print('Specificity of the network on the 10000 test images: %f %%' % metrics['specificity'])
     print('F1-score of the network on the 10000 test images: %f %%' % metrics['f1score'])
+    print('Entropy: ', entropy)
     # acc_train.append(accuracy)
 
     wandb_dict[args.mode + "_acc"] = metrics['accuracy']

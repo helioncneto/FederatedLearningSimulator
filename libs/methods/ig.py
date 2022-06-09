@@ -8,7 +8,7 @@ __all__ = ['selection_ig', 'update_participants_score', 'calc_ig', 'load_from_fi
 
 
 def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_participants: List[int],
-                 participants_score: dict) -> tuple:
+                 participants_score: dict, participants_count: dict = {}) -> tuple:
     selection_helper = copy.deepcopy(participants_score)
     selected_participants = []
     for _ in range(selected_participants_num):
@@ -17,16 +17,25 @@ def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_
             print("Random selection")
             if len(not_selected_participants) != 0:
                 selected = np.random.choice(not_selected_participants)
+                not_selected_participants.remove(selected)
             else:
                 selected = np.random.choice(list(selection_helper.keys()))
-            if selected in not_selected_participants:
-                not_selected_participants.remove(selected)
+                if len(participants_count.keys()) != 0:
+                    while participants_count[selected] >= 3:
+                        print(f'Participant {selected} is blocked')
+                        selected = np.random.choice(list(selection_helper.keys()))
+
             selection_helper.pop(selected)
             selected_participants.append(selected)
         else:
             # Select the best participant
             print("Greedy selection")
-            selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[0]
+            sel = 0
+            selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[sel]
+            while participants_count[selected] >= 3:
+                print(f'Participant {selected} is blocked')
+                sel += 1
+                selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[sel]
             if selected in not_selected_participants:
                 not_selected_participants.remove(selected)
             selection_helper.pop(selected)
@@ -50,13 +59,13 @@ def update_participants_score(participants_score: dict, cur_ig: dict, ig: dict,
     return participants_score, ig
 
 
-def calc_ig(parent_entropy: float, child_entropy: dict, parent_size: int, child_size: list) -> dict:
+def calc_ig(parent_entropy: float, child_entropy: dict, w: dict) -> dict:
     ig = {}
     for idx, (client_id, child) in enumerate(child_entropy.items()):
-        w = child_size[idx]/parent_size
+        #w = child_size[idx]/parent_size
         #curr_ig = -np.log(parent_entropy) - np.log(w * child)
         #curr_ig = -np.log(parent_entropy) - w * (-np.log(child))
-        curr_ig = -np.log(parent_entropy) - w * np.log(child)
+        curr_ig = -np.log(parent_entropy) - w[client_id] * np.log(child)
         ig[client_id] = curr_ig
     return ig
 
