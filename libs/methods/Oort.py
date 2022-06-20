@@ -266,6 +266,7 @@ class _training_selector:
             self.exploration_min = 0.
             self.exploration = 0.
 
+        #Todo: Whats going on here? Possible Infinity loop.
         while len(pickedClients) < numOfSamples:
             nextId = self.rng.choice(orderedKeys)
             if nextId not in pickedClients:

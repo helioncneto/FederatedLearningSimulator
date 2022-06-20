@@ -65,7 +65,8 @@ def calc_ig(parent_entropy: float, child_entropy: dict, w: dict) -> dict:
         #w = child_size[idx]/parent_size
         #curr_ig = -np.log(parent_entropy) - np.log(w * child)
         #curr_ig = -np.log(parent_entropy) - w * (-np.log(child))
-        curr_ig = -np.log(parent_entropy) - w[client_id] * np.log(child)
+        #curr_ig = -np.log(parent_entropy) - w[client_id] * np.log(child)
+        curr_ig = -np.log(parent_entropy) + w[client_id] * np.log(child)
         ig[client_id] = curr_ig
     return ig
 
