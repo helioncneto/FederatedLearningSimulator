@@ -267,10 +267,16 @@ class _training_selector:
             self.exploration = 0.
 
         #Todo: Whats going on here? Possible Infinity loop.
+        safe_break = 0
         while len(pickedClients) < numOfSamples:
             nextId = self.rng.choice(orderedKeys)
             if nextId not in pickedClients:
                 pickedClients.append(nextId)
+                safe_break = 0
+            else:
+                safe_break += 1
+            if safe_break > numOfSamples:
+                break
 
         top_k_score = []
         for i in range(min(3, len(pickedClients))):
