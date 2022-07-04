@@ -308,7 +308,7 @@ class _training_selector:
 
     def get_norm(self, aList, clip_bound=0.95, thres=1e-4):
         aList.sort()
-        clip_value = aList[min(int(len(aList)*clip_bound), len(aList)-1)]
+        clip_value = aList[min(abs(int(len(aList)*clip_bound)), len(aList)-1)]
 
         _max = max(aList)
         _min = min(aList)*0.999
