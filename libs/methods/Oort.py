@@ -179,6 +179,7 @@ class _training_selector:
                 creward = self.totalArms[clientId]['reward']
                 moving_reward.append(creward)
                 staleness.append(cur_time - self.totalArms[clientId]['time_stamp'])
+        print(f"Clients rewards: {self.totalArms}")
 
 
         max_reward, min_reward, range_reward, avg_reward, clip_value = self.get_norm(moving_reward, self.args.clip_bound)
@@ -310,6 +311,7 @@ class _training_selector:
         aList.sort()
         clip_idx = min(abs(int(len(aList)*clip_bound)), len(aList)-1)
         print(f"The clip value is {clip_idx}")
+        print(f"The list is {aList}")
         clip_value = aList[clip_idx]
 
         _max = max(aList)
