@@ -180,6 +180,9 @@ class _training_selector:
                 moving_reward.append(creward)
                 staleness.append(cur_time - self.totalArms[clientId]['time_stamp'])
         print(f"Clients rewards: {self.totalArms}")
+        print(f"The ordered Keys: {orderedKeys}")
+        print(f"The Black List: {self.blacklist}")
+        print(f"The Feasible Clients: {feasible_clients}")
 
 
         max_reward, min_reward, range_reward, avg_reward, clip_value = self.get_norm(moving_reward, self.args.clip_bound)
