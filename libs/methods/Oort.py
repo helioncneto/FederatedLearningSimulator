@@ -116,13 +116,12 @@ class _training_selector:
         self.unexplored.discard(clientId)
         self.successfulClients.add(clientId)
 
-
     def get_blacklist(self):
         blacklist = []
 
         if self.args.blacklist_rounds != -1:
             sorted_client_ids = sorted(list(self.totalArms), reverse=True,
-                                       key=lambda k:self.totalArms[k]['count'])
+                                       key=lambda k: self.totalArms[k]['count'])
 
             for clientId in sorted_client_ids:
                 if self.totalArms[clientId]['count'] > self.args.blacklist_rounds:
