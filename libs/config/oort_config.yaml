@@ -3,8 +3,8 @@ pacer_delta: 10
 pacer_step: 20
 cut_off_util: 0.4                     # Determined by W * K
 clip_bound: 0.95
-blacklist_max_len: 5
-blacklist_rounds: 3                  # Number of rounds needed to blacklist
+blacklist_max_len: 0.5
+blacklist_rounds: 15                  # Number of rounds needed to blacklist
 exploration_factor: 0.9
 exploration_decay: 0.98
 exploration_min: 0.2
