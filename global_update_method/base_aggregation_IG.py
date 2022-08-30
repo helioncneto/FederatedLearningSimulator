@@ -57,6 +57,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                                                   #replace=False)
     loss_func = nn.CrossEntropyLoss()
     ig = {}
+    entropy = {}
     participants_score = {idx: selected_participants_num/total_participants for idx in range(total_participants)}
     not_selected_participants = list(participants_score.keys())
     #ep_greedy = args.epsilon_greedy
@@ -68,7 +69,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         wandb_dict = {}
         num_of_data_clients = []
         local_weight = []
-        local_loss = []
+        local_loss = {}
         local_delta = []
         global_weight = copy.deepcopy(model.state_dict())
         eg_momentum = 0.9
@@ -114,7 +115,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
             weight, loss = local_setting.train(net=copy.deepcopy(model).to(device))
             local_weight.append(copy.deepcopy(weight))
-            local_loss.append(copy.deepcopy(loss))
+            local_loss[participant] = copy.deepcopy(loss)
 
             local_model = copy.deepcopy(model).to(device)
             local_model.load_state_dict(weight)
@@ -152,12 +153,35 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         loss_train.append(loss_avg)
         # print(models_val_loss)
 
+        # Calculating the Global loss
+        global_losses = []
+        model.eval()
+
+        for participant in selected_participants:
+            participant_dataset_loader = DataLoader(DatasetSplit(trainset, dataset[participant]),
+                                                    batch_size=args.batch_size, shuffle=True)
+            if participant in entropy.keys():
+                current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=model,
+                                                       device=device,
+                                                       evaluate=False)
+            else:
+                current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=model,
+                                                       device=device, evaluate=False, calc_entropy=True)
+                entropy[participant] = current_global_metrics['entropy']
+            global_losses.append(current_global_metrics['loss'])
+            print(f'=> Participant {participant} loss: {current_global_metrics["loss"]}')
+
+        global_loss = sum(global_losses) / len(global_losses)
+        print(f'=> Mean global loss: {global_loss}')
+
+        global_loss = sum(global_losses) / len(global_losses)
 
         print('performing the evaluation')
         model.eval()
         metrics = do_evaluation(testloader=testloader, model=model, device=device)
         model.train()
-        cur_ig = calc_ig(metrics['loss'], models_val_loss, total_num_of_data_clients, num_of_data_clients)
+        #cur_ig = calc_ig(metrics['loss'], models_val_loss, total_num_of_data_clients, num_of_data_clients)
+        cur_ig = calc_ig(global_loss, local_loss, entropy)
 
         participants_score, ig = update_participants_score(participants_score, cur_ig, ig, eg_momentum)
 
