@@ -130,7 +130,7 @@ class _training_selector:
                     break
 
             # we need to back up if we have blacklisted all clients
-            predefined_max_len = self.args.blacklist_max_len * len(self.totalArms)
+            predefined_max_len = int(self.args.blacklist_max_len * len(self.totalArms))
 
             if len(blacklist) > predefined_max_len:
                 logging.warning("Training Selector: exceeds the blacklist threshold")
