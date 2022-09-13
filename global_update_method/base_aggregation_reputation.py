@@ -119,6 +119,12 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             if reputation[part][epoch]["selected"]:
                 selected_participants.append(part)
 
+        if len(selected_participants) < selected_participants_num:
+            missing_to_select = len(selected_participants) - selected_participants_num
+            to_select = np.array(list(set(all_participants) - set(selected_participants)))
+            selected_random = np.random.choice(to_select, missing_to_select, replace=False)
+            selected_participants = np.concatenate((selected_participants, selected_random), axis=0).astype(int)
+
         FedAvg_weight = copy.deepcopy(local_weight[selected_participants[0]])
         for key in FedAvg_weight.keys():
             for i in selected_participants:
