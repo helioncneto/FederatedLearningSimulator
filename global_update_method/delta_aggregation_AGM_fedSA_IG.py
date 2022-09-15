@@ -47,7 +47,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
     this_tau = args.tau
     global_delta = copy.deepcopy(model.state_dict())
-    selected_participants_num = max(int(args.participation_rate * args.num_of_clients), 1)
+
     for key in global_delta.keys():
         global_delta[key] = torch.zeros_like(global_delta[key])
 
@@ -117,7 +117,7 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     if len(blocked) > 0:
         parts_to_ublock = []
         for part, since in blocked.items():
-            if since + int(20/10) <= epoch:
+            if since + int(args.num_of_clients / selected_participants_num) <= epoch:
                 parts_to_ublock.append(part)
                 participants_count[part] = 0
 

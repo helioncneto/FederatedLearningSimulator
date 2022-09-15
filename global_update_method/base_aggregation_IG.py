@@ -63,6 +63,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     #ep_greedy = args.epsilon_greedy
     ep_greedy = 1
     ep_greedy_decay = pow(0.01, 1/args.global_epochs)
+    participants_count = {participant: 0 for participant in list(participants_score.keys())}
+    blocked = {}
 
     for epoch in range(args.global_epochs):
         print('starting a new epoch')
@@ -78,6 +80,16 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         '''selected_participants = []
         selection_helper = copy.deepcopy(participants_score)'''
         selected_participants = None
+
+        if len(blocked) > 0:
+            parts_to_ublock = []
+            for part, since in blocked.items():
+                if since + int(total_participants / selected_participants_num) <= epoch:
+                    parts_to_ublock.append(part)
+                    participants_count[part] = 0
+
+            [blocked.pop(part) for part in parts_to_ublock]
+
         if epoch == 0 or args.participation_rate >= 1:
             print('Selecting the participants')
             #selected_participants = np.random.choice(range(args.num_of_clients + selected_participants_fake_num),
@@ -90,7 +102,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         elif args.participation_rate < 1:
             selected_participants, not_selected_participants = selection_ig(selected_participants_num, ep_greedy,
                                                                             not_selected_participants,
-                                                                            participants_score)
+                                                                            participants_score,
+                                                                            participants_count=participants_count)
         print(' Participants IDS: ', selected_participants)
         print(f"This is global {epoch} epoch")
         if selected_participants is None:
