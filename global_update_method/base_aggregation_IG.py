@@ -220,7 +220,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         pack = Pack_Train(model=model, global_weight=global_weight, dataset=dataset, local_update=local_update,
                           args=args, this_lr=this_lr, device=device, trainset=trainset, this_alpha=this_alpha)
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             for outpt in executor.map(training_participant, selected_participants, (pack for _ in range(len(selected_participants)))):
                 p, weight, loss, delta, dataset_size = outpt
                 local_weight[p] = copy.deepcopy(outpt[1])
@@ -264,7 +264,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             print(f'=> Participant {participant} loss: {current_global_metrics["loss"]}')'''
         pack_eval = Pack_Eval(model=model, participant_dataset_loader_table=participant_dataset_loader_table,
                               do_evaluation=do_evaluation, device=device, entropy=entropy)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             for outpt in executor.map(training_participant, selected_participants, (pack for _ in range(len(selected_participants)))):
                 current_global_loss, current_entropy = outpt
                 global_losses[p] = current_global_loss
