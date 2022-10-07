@@ -236,7 +236,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             multiprocessing.set_start_method('spawn')
         except RuntimeError:
             pass'''
-        selected_participants = selected_participants[:2]
+        selected_participants = selected_participants[:1]
         for participant in selected_participants:
             print("Creating Process")
             p = multiprocessing.Process(target=training_participant, args=(participant, pack, return_dict))
