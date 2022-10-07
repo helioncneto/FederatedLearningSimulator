@@ -13,6 +13,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 
 def init_env():
+    args.run_args()
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_device)
 
