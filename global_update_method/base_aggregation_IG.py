@@ -237,17 +237,20 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         except RuntimeError:
             pass'''
         selected_participants = selected_participants[:2]
-        for participant in selected_participants:
-            print("Creating Process")
-            p = multiprocessing.Process(target=training_participant, args=(participant, pack, return_dict))
-            print("Process about to start")
-            p.start()
-            print("Process started")
-            jobs.append(p)
-            print(f"Participant {participant} start training")
+        #for participant in selected_participants:
+        with multiprocessing.Pool(3) as p:
+            #print("Creating Process")
+            #p = multiprocessing.Process(target=training_participant, args=(participant, pack, return_dict))
+            #print("Process about to start")
+            #p.start()
+            #print("Process started")
+            #jobs.append(p)
+            #print(f"Participant {participant} start training")
+            p.map(training_participant, selected_participants, [pack for _ in range(len(selected_participants))],
+                  [return_dict for _ in range(len(selected_participants))])
 
-        for proc in jobs:
-            proc.join()
+        #for proc in jobs:
+            #proc.join()
 
         for participant, values in return_dict.items():
             weight, loss, delta, dataset_size = values
