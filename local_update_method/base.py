@@ -48,5 +48,5 @@ class LocalUpdate:
                 #batch_loss.append(loss.item())
                 batch_loss = torch.cat((batch_loss, loss.unsqueeze(0)), 0)
             #epoch_loss.append(sum(batch_loss)/len(batch_loss))
-            epoch_loss.append(torch.sum(batch_loss) / batch_loss.size(0).item())
+            epoch_loss.append((torch.sum(batch_loss) / batch_loss.size(0)).item())
         return net.state_dict(), sum(epoch_loss) / len(epoch_loss)
