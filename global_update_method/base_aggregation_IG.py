@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Tuple
 from libs.methods.ig import selection_ig, update_participants_score, calc_ig
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
+from multiprocessing import Pool
 import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
@@ -220,15 +221,18 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         pack = Pack_Train(model=model, global_weight=global_weight, dataset=dataset, local_update=local_update,
                           args=args, this_lr=this_lr, device=device, trainset=trainset, this_alpha=this_alpha)
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            for outpt in executor.map(training_participant, selected_participants, (pack for _ in range(len(selected_participants)))):
-                p, weight, loss, delta, dataset_size = outpt
-                local_weight[p] = copy.deepcopy(outpt[1])
-                local_loss[p] = copy.deepcopy(loss)
-                local_delta[p] = delta
-                num_of_data_clients[p] = dataset_size
+        #with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            #for outpt in executor.map(training_participant, selected_participants, (pack for _ in range(len(selected_participants)))):
+        with Pool(10) as pool:
+            #p, weight, loss, delta, dataset_size = outpt
+            p, weight, loss, delta, dataset_size = pool.map(training_participant, [pack for _ in range(len(selected_participants))])
+            local_weight[p] = copy.deepcopy(outpt[1])
+            local_loss[p] = copy.deepcopy(loss)
+            local_delta[p] = delta
+            num_of_data_clients[p] = dataset_size
 
         total_num_of_data_clients = sum(num_of_data_clients.values())
+        local_weight = list(local_weight.values())
         FedAvg_weight = copy.deepcopy(local_weight[0])
         for key in FedAvg_weight.keys():
             for i in range(len(local_weight)):
