@@ -8,7 +8,7 @@ from libs.methods.ig import selection_ig, update_participants_score, calc_ig
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 #import multiprocessing
 from torch import multiprocessing
-multiprocessing.set_start_method('spawn', force=True)
+multiprocessing.set_start_method('forkserver', force=True)
 import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
@@ -237,20 +237,17 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         except RuntimeError:
             pass'''
         selected_participants = selected_participants[:2]
-        #for participant in selected_participants:
-        with multiprocessing.Pool(3) as p:
-            #print("Creating Process")
-            #p = multiprocessing.Process(target=training_participant, args=(participant, pack, return_dict))
-            #print("Process about to start")
-            #p.start()
-            #print("Process started")
-            #jobs.append(p)
-            #print(f"Participant {participant} start training")
-            p.map(training_participant, selected_participants, [pack for _ in range(len(selected_participants))],
-                  [return_dict for _ in range(len(selected_participants))])
+        for participant in selected_participants:
+            print("Creating Process")
+            p = multiprocessing.Process(target=training_participant, args=(participant, pack, return_dict))
+            print("Process about to start")
+            p.start()
+            print("Process started")
+            jobs.append(p)
+            print(f"Participant {participant} start training")
 
-        #for proc in jobs:
-            #proc.join()
+        for proc in jobs:
+            proc.join()
 
         for participant, values in return_dict.items():
             weight, loss, delta, dataset_size = values
