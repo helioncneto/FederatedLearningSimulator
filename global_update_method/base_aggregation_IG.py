@@ -32,6 +32,13 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     model.train()
 
     dataset = get_dataset(args, trainset, args.mode)
+    print("Preparing participants evaluation datasets")
+    participant_dataset_loader_table = {}
+    for participant in range(args.num_of_clients):
+        participant_dataset_ldr = DataLoader(DatasetSplit(trainset, dataset[participant]),
+                                                batch_size=args.batch_size, shuffle=True)
+        participant_dataset_loader_table[participant] = participant_dataset_ldr
+
     directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced_fake'
     filepath = directory + '/' + args.mode + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
         args.num_of_clients) + '.txt'
@@ -172,8 +179,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         model.eval()
 
         for participant in selected_participants:
-            participant_dataset_loader = DataLoader(DatasetSplit(trainset, dataset[participant]),
-                                                    batch_size=args.batch_size, shuffle=True)
+            participant_dataset_loader = participant_dataset_loader_table[participant]
             if participant in entropy.keys():
                 current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=model,
                                                        device=device,
