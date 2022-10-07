@@ -35,13 +35,13 @@ class Pack_Train:
     args : parser
     this_lr: float
     device: torch.device
-    trainset: torch.TensorDataset
+    trainset: TensorDataset
     this_alpha: float
 
 @dataclass
 class Pack_Eval:
     model: torch.nn.Module
-    participant_dataset_loader_table: disct
+    participant_dataset_loader_table: dict
     do_evaluation: Callable
     device: torch.device
     entropy: dict
