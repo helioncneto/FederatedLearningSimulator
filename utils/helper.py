@@ -146,6 +146,7 @@ def do_evaluation(testloader, model, device: int, evaluate: bool = True, calc_en
     loss_func = nn.CrossEntropyLoss()
     batch_loss = []
     balance = Counter()
+    print(f"DEVICE: {device}")
     with torch.no_grad():
         preds = np.array([])
         full_lables = np.array([])
