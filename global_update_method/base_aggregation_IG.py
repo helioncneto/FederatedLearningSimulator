@@ -8,6 +8,7 @@ from libs.methods.ig import selection_ig, update_participants_score, calc_ig
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 #import multiprocessing
 from torch import multiprocessing
+multiprocessing.set_start_method('spawn')
 import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
@@ -231,10 +232,10 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         manager = multiprocessing.Manager()
         return_dict = manager.dict()
         jobs = []
-        try:
+        '''try:
             multiprocessing.set_start_method('spawn')
         except RuntimeError:
-            pass
+            pass'''
         for participant in selected_participants:
             p = multiprocessing.Process(target=training_participant, args=(participant, pack, return_dict))
             jobs.append(p)
