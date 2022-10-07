@@ -808,5 +808,5 @@ def run_args():
     if args is None:
         args = parse_arguments()
 
-if __name__ == '__main__':
-    run_args()
+
+run_args()
