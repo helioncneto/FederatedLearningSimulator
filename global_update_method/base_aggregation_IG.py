@@ -1,7 +1,7 @@
 # coding: utf-8
 import concurrent
 import parser
-from builtins import function
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Tuple
 from libs.methods.ig import selection_ig, update_participants_score, calc_ig
@@ -31,7 +31,7 @@ class Pack_Train:
     model : torch.nn.Module
     global_weight : dict
     dataset : dict
-    local_update: function
+    local_update: Callable
     args : parser
     this_lr: float
     device: torch.device
@@ -42,7 +42,7 @@ class Pack_Train:
 class Pack_Eval:
     model: torch.nn.Module
     participant_dataset_loader_table: disct
-    do_evaluation: function
+    do_evaluation: Callable
     device: torch.device
     entropy: dict
 
