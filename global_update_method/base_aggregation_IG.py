@@ -89,6 +89,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
+    model.share_memory()
     if args.use_wandb:
         wandb.watch(model)
     model.train()
@@ -222,7 +223,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         # participant, model, global_weight, dataset, local_update, args, this_lr,  device, trainset,
         #this_alpha
         # Returns: participant, weight, loss, delta, num_of_data_clients
-        #model.share_memory()
         pack = Pack_Train(model=model, global_weight=global_weight, dataset=dataset, local_update=local_update,
                           args=args, this_lr=this_lr, device=device, trainset=trainset, this_alpha=this_alpha)
 
@@ -239,6 +239,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         for participant in selected_participants:
             p = multiprocessing.Process(target=training_participant, args=(participant, pack, return_dict))
             p.start()
+            print("Process started")
             jobs.append(p)
             print(f"Participant {participant} start training")
 
