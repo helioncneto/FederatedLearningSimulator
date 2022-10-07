@@ -228,7 +228,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         manager = multiprocessing.Manager()
         return_dict = manager.dict()
         jobs = []
-        for participant in range(len(selected_participants)):
+        for participant in selected_participants:
             p = multiprocessing.Process(target=training_participant, args=(participant, pack, return_dict))
             jobs.append(p)
             p.start()
