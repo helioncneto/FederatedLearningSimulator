@@ -116,7 +116,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         if selected_participants is None:
             return
         print('Training participants')
-        models_val_loss = {}
+        #models_val_loss = {}
 
         for participant in selected_participants:
             #if participant < args.num_of_clients:
@@ -141,14 +141,14 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             local_model.load_state_dict(weight)
             local_model.eval()
 
-            batch_loss = torch.tensor([]).to(device)
-            with torch.no_grad():
-                for x, labels in testloader:
-                    x, labels = x.to(device), labels.to(device)
-                    outputs = local_model(x)
-                    local_val_loss = loss_func(outputs, labels)
-                    batch_loss = torch.cat((batch_loss, local_val_loss.unsqueeze(0)), 0)
-                models_val_loss[participant] = (torch.sum(batch_loss) / batch_loss.size(0)).item()
+            #batch_loss = torch.tensor([]).to(device)
+            #with torch.no_grad():
+            #    for x, labels in testloader:
+            #        x, labels = x.to(device), labels.to(device)
+            #        outputs = local_model(x)
+            #        local_val_loss = loss_func(outputs, labels)
+            #        batch_loss = torch.cat((batch_loss, local_val_loss.unsqueeze(0)), 0)
+            #    models_val_loss[participant] = (torch.sum(batch_loss) / batch_loss.size(0)).item()
 
             delta = {}
             for key in weight.keys():
@@ -228,7 +228,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             print('Specificity of the network on the 10000 test images: %f %%' % metrics['specificity'])
             print('F1-score of the network on the 10000 test images: %f %%' % metrics['f1score'])
             print(f'Information Gain: {ig}')
-            print(f'Participants loss: {models_val_loss}')
+            #print(f'Participants loss: {models_val_loss}')
 
 
         wandb_dict[args.mode + "_acc"] = metrics['accuracy']

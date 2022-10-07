@@ -144,11 +144,11 @@ def shuffle(arr: np.array) -> np.array:
 def do_evaluation(testloader, model, device: torch.device, evaluate: bool = True, calc_entropy=False) -> dict:
     model.eval()
     loss_func = nn.CrossEntropyLoss()
-    batch_loss = torch.tensor([]).to(device)
+    batch_loss = torch.tensor([], requires_grad=False).to(device)
     balance = Counter()
     with torch.no_grad():
-        preds = torch.tensor([]).to(device)
-        full_lables = torch.tensor([]).to(device)
+        preds = torch.tensor([], requires_grad=False).to(device)
+        full_lables = torch.tensor([], requires_grad=False).to(device)
         first = True
         for x, labels in testloader:
             x, labels = x.to(device), labels.to(device)
