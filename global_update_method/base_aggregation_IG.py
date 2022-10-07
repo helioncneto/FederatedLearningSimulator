@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Tuple
 from libs.methods.ig import selection_ig, update_participants_score, calc_ig
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
-from multiprocessing import Pool
+import multiprocessing
 import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
@@ -48,7 +48,7 @@ class Pack_Eval:
     entropy: dict
 
 
-def training_participant(participant, pack: Pack_Train):
+def training_participant(participant: int, pack: Pack_Train, return_dict: dict):
     idxs = pack.dataset[participant]
     local_setting = pack.local_update(args=pack.args, lr=pack.this_lr, local_epoch=pack.args.local_epochs, device=pack.device,
                                  batch_size=pack.args.batch_size, dataset=pack.trainset, idxs=idxs,
@@ -64,7 +64,7 @@ def training_participant(participant, pack: Pack_Train):
     for key in weight.keys():
         delta[key] = weight[key] - pack.global_weight[key]
     #local_delta.append(delta)
-    return participant, weight, loss, delta, len(pack.dataset[participant])
+    return_dict[participant] = weight, loss, delta, len(pack.dataset[participant])
 
 
 def eval_participant(participant, pack: Pack_Eval):
@@ -223,13 +223,24 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
         #with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             #for outpt in executor.map(training_participant, selected_participants, (pack for _ in range(len(selected_participants)))):
-        with Pool(10) as pool:
-            #p, weight, loss, delta, dataset_size = outpt
-            p, weight, loss, delta, dataset_size = pool.map(training_participant, [pack for _ in range(len(selected_participants))])
-            local_weight[p] = copy.deepcopy(outpt[1])
-            local_loss[p] = copy.deepcopy(loss)
-            local_delta[p] = delta
-            num_of_data_clients[p] = dataset_size
+            # p, weight, loss, delta, dataset_size = outpt
+        manager = multiprocessing.Manager()
+        return_dict = manager.dict()
+        jobs = []
+        for participant in range(selected_participants)
+            p = multiprocessing.Process(target=training_participant, args=(participant, pack, return_dict))
+            jobs.append(p)
+            p.start()
+
+        for proc in jobs:
+            proc.join()
+
+        for participant, values in return_dict.items():
+            weight, loss, delta, dataset_size = values
+            local_weight[participant] = copy.deepcopy(outpt[1])
+            local_loss[participant] = copy.deepcopy(loss)
+            local_delta[participant] = delta
+            num_of_data_clients[participant] = dataset_size
 
         total_num_of_data_clients = sum(num_of_data_clients.values())
         local_weight = list(local_weight.values())
