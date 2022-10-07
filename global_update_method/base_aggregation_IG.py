@@ -55,7 +55,8 @@ def training_participant(participant: int, pack: Pack_Train, return_dict: dict):
                                  batch_size=pack.args.batch_size, dataset=pack.trainset, idxs=idxs,
                                  alpha=pack.this_alpha)
     print(f"Participant {participant} training...")
-    weight, loss = local_setting.train(net=copy.deepcopy(pack.model).to(pack.device))
+    #weight, loss = local_setting.train(net=copy.deepcopy(pack.model).to(pack.device))
+    weight, loss = local_setting.train(net=pack.model.to(pack.device))
     #local_weight.append(copy.deepcopy(weight)) retornar weight
     #local_loss[participant] = copy.deepcopy(loss) retornar loss
 
