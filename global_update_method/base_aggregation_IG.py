@@ -237,7 +237,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         except RuntimeError:
             pass'''
         for participant in selected_participants:
+            print("Creating Process")
             p = multiprocessing.Process(target=training_participant, args=(participant, pack, return_dict))
+            print("Process about to start")
             p.start()
             print("Process started")
             jobs.append(p)
