@@ -159,6 +159,10 @@ def do_evaluation(testloader, model, device: int, evaluate: bool = True, calc_en
             val_loss = loss_func(outputs, labels)
             batch_loss.append(val_loss.item())
             top_p, top_class = outputs.topk(1, dim=1)
+            if torch.cuda.is_available():
+                top_class = top_class.cpu()
+                labels = labels.cpu()
+
             if first:
                 preds = top_class.numpy()
                 full_lables = copy.deepcopy(labels)
