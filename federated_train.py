@@ -50,7 +50,6 @@ def init_env(args):
 def main():
     """The main function of the federated learning simulator"""
     # initiate the simulator environment
-    global args
     args = run_args()
     init_env(args)
 
@@ -66,7 +65,7 @@ def main():
     if dataset_factory is not None:
         global_update, local_update = None, None
 
-        trainset, testset, valset = dataset_factory.get_dataset()
+        trainset, testset, valset = dataset_factory.get_dataset(args)
         testloader = DataLoader(testset, batch_size=args.batch_size,
                                 shuffle=False, num_workers=args.workers)
         valloader = DataLoader(valset, batch_size=args.batch_size,

@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 import datasets as local_datasets
-from args_dir.federated import args
+#from args_dir.federated import args
 from libs.dataset import cicids_dataset
 
 
@@ -14,13 +14,13 @@ class IDatasetFactory(ABC):
     """Basic representation of a Dataset factory"""
 
     @abstractmethod
-    def get_dataset(self) -> tuple:
+    def get_dataset(self, args) -> tuple:
         """Return the Dataset class"""
 
 
 class TransformHelper:
     @staticmethod
-    def get_cifar_transform():
+    def get_cifar_transform(args):
         normalize = torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465),
                                          (0.2470, 0.2435, 0.2616)) if args.set == 'CIFAR10' else \
             torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
@@ -55,7 +55,7 @@ class TransformHelper:
 class Cifar10DatasetFactory(IDatasetFactory):
     """Basic representation of the CIFAR10 Dataset factory"""
 
-    def get_dataset(self) -> tuple:
+    def get_dataset(self, args) -> tuple:
         """Return the Dataset class CIFAR10"""
         transform_train, transform_test = TransformHelper.get_cifar_transform()
         trainset = torchvision.datasets.CIFAR10(root=args.data, train=True,
@@ -70,7 +70,7 @@ class Cifar10DatasetFactory(IDatasetFactory):
 class Cifar100DatasetFactory(IDatasetFactory):
     """Basic representation of a Dataset factory"""
 
-    def get_dataset(self) -> tuple:
+    def get_dataset(self, args) -> tuple:
         """Return the Dataset class CIFAR100"""
         transform_train, transform_test = TransformHelper.get_cifar_transform()
         trainset = torchvision.datasets.CIFAR100(root=args.data, train=True,
@@ -83,7 +83,7 @@ class Cifar100DatasetFactory(IDatasetFactory):
 class TinyImageNetDatasetFactory(IDatasetFactory):
     """Basic representation of a Dataset factory"""
 
-    def get_dataset(self) -> tuple:
+    def get_dataset(self, args) -> tuple:
         """Return the Dataset class"""
         transform = TransformHelper.get_tiny_imagenet_transform()
         trainset = local_datasets.TinyImageNetDataset(
@@ -102,7 +102,7 @@ class TinyImageNetDatasetFactory(IDatasetFactory):
 class CICIDS2017DatasetFactory(IDatasetFactory):
     """Basic representation of a Dataset factory"""
 
-    def get_dataset(self) -> tuple:
+    def get_dataset(self, args) -> tuple:
         """Return the CICIDS2017 Dataset class"""
         files_path = os.path.join(args.data, 'CICIDS2017')
         cic_ids_path = os.path.join(files_path, 'cicids2017.csv')
