@@ -53,6 +53,7 @@ def training_participant(participant: int, pack: Pack_Train, return_dict: dict):
     local_setting = pack.local_update(args=pack.args, lr=pack.this_lr, local_epoch=pack.args.local_epochs, device=pack.device,
                                  batch_size=pack.args.batch_size, dataset=pack.trainset, idxs=idxs,
                                  alpha=pack.this_alpha)
+    print(f"Participant {participant} training...")
     weight, loss = local_setting.train(net=copy.deepcopy(pack.model).to(pack.device))
     #local_weight.append(copy.deepcopy(weight)) retornar weight
     #local_loss[participant] = copy.deepcopy(loss) retornar loss
@@ -231,6 +232,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             p = multiprocessing.Process(target=training_participant, args=(participant, pack, return_dict))
             jobs.append(p)
             p.start()
+            print(f"Participant {participant} start training")
 
         for proc in jobs:
             proc.join()
