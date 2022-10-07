@@ -1,4 +1,4 @@
-
+from args_dir.federated import run_args
 import libs.dataset.dataset_factory as dataset_loader
 from libs.methods.method_factory import LOCALUPDATE_LOOKUP_TABLE, GLOBALAGGREGATION_LOOKUP_TABLE
 
@@ -13,6 +13,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 
 def init_env():
+    args = run_args()
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_device)
 
@@ -87,5 +88,5 @@ def main():
 
 
 if __name__ == '__main__':
-    from args_dir.federated import args
+    #from args_dir.federated import args
     main()

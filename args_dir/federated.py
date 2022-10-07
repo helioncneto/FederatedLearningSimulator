@@ -804,9 +804,10 @@ def get_config(args):
 
 
 def run_args():
-    global args
-    if args is None:
-        args = parse_arguments()
+    #global args
+    #if args is None:
+    #    args = parse_arguments()
+    return parse_arguments()
 
 
-run_args()
+#run_args()
