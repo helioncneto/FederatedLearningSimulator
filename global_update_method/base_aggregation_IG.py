@@ -231,6 +231,10 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         manager = multiprocessing.Manager()
         return_dict = manager.dict()
         jobs = []
+        try:
+            multiprocessing.set_start_method('spawn')
+        except RuntimeError:
+            pass
         for participant in selected_participants:
             p = multiprocessing.Process(target=training_participant, args=(participant, pack, return_dict))
             jobs.append(p)
