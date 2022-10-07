@@ -141,15 +141,14 @@ def shuffle(arr: np.array) -> np.array:
     return arr
 
 
-def do_evaluation(testloader, model, device: int, evaluate: bool = True, calc_entropy=False) -> dict:
+def do_evaluation(testloader, model, device: torch.device, evaluate: bool = True, calc_entropy=False) -> dict:
     model.eval()
     loss_func = nn.CrossEntropyLoss()
     batch_loss = []
     balance = Counter()
-    print(f"DEVICE: {device}")
     with torch.no_grad():
-        preds = np.array([])
-        full_lables = np.array([])
+        preds = torch.tensor([]).to(device)
+        full_lables = torch.tensor([]).to(device)
         first = True
         for x, labels in testloader:
             x, labels = x.to(device), labels.to(device)
@@ -160,17 +159,14 @@ def do_evaluation(testloader, model, device: int, evaluate: bool = True, calc_en
             val_loss = loss_func(outputs, labels)
             batch_loss.append(val_loss.item())
             top_p, top_class = outputs.topk(1, dim=1)
-            if torch.cuda.is_available():
-                top_class = top_class.cpu()
-                labels = labels.cpu()
 
             if first:
-                preds = top_class.numpy()
+                preds = top_class
                 full_lables = copy.deepcopy(labels)
                 first = False
             else:
-                preds = np.concatenate((preds, top_class.numpy()))
-                full_lables = np.concatenate((full_lables, labels))
+                preds = torch.cat((preds, top_class), 0)
+                full_lables = torch.cat((full_lables, labels), 0)
 
         loss_avg = (sum(batch_loss) / len(batch_loss))
 
@@ -181,17 +177,20 @@ def do_evaluation(testloader, model, device: int, evaluate: bool = True, calc_en
             p_s = [value/sum(balance.values()) for value in balance.values()]
             entropy = reduce(lambda a, b: -(a * np.log2(a) + b * np.log2(b)), p_s)
 
+    if torch.cuda.is_available():
+        preds = preds.cpu()
+        full_lables = full_lables.cpu()
     if evaluate:
         print('calculating avg accuracy')
         evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
-        metrics = evaluator.run_metrics(preds, full_lables)
+        metrics = evaluator.run_metrics(preds.numpy(), full_lables.numpy())
         metrics['loss'] = loss_avg
-        model.train()
     else:
         metrics = {'loss': loss_avg}
 
     if calc_entropy:
         metrics['entropy'] = entropy
+    model.train()
     return metrics
 
 
