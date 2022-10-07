@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from typing import Tuple
 from libs.methods.ig import selection_ig, update_participants_score, calc_ig
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
-import multiprocessing
+#import multiprocessing
+from torch import multiprocessing
 import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
