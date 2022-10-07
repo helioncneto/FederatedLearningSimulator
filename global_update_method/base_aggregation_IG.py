@@ -163,6 +163,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         print(' num_of_data_clients : ', num_of_data_clients)
         print(' Participants IDS: ', selected_participants)
         print(' Average loss {:.3f}'.format(loss_avg))
+        print(f"Local losses: {local_loss}")
         loss_train.append(loss_avg)
         # print(models_val_loss)
 
