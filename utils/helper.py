@@ -149,7 +149,7 @@ def do_evaluation(testloader, model, device: torch.device, evaluate: bool = True
     with torch.no_grad():
         preds = torch.tensor([], requires_grad=False).to(device)
         full_lables = torch.tensor([], requires_grad=False).to(device)
-        first = True
+        #first = True
         for x, labels in testloader:
             x, labels = x.to(device), labels.to(device)
             if calc_entropy:
@@ -160,14 +160,16 @@ def do_evaluation(testloader, model, device: torch.device, evaluate: bool = True
             #batch_loss.append(val_loss.item())
             batch_loss = torch.cat((batch_loss, val_loss.unsqueeze(0)), 0)
             top_p, top_class = outputs.topk(1, dim=1)
+            preds = torch.cat((preds, top_class), 0)
+            full_lables = torch.cat((full_lables, labels), 0)
 
-            if first:
+            '''if first:
                 preds = top_class
                 full_lables = copy.deepcopy(labels)
                 first = False
             else:
                 preds = torch.cat((preds, top_class), 0)
-                full_lables = torch.cat((full_lables, labels), 0)
+                full_lables = torch.cat((full_lables, labels), 0)'''
 
         loss_avg = (torch.sum(batch_loss) / batch_loss.size(0)).item()
 
