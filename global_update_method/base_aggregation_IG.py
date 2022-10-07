@@ -1,4 +1,8 @@
 # coding: utf-8
+import concurrent
+import parser
+from builtins import function
+from dataclasses import dataclass
 from typing import Tuple
 from libs.methods.ig import selection_ig, update_participants_score, calc_ig
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
@@ -21,6 +25,59 @@ def gen_train_fake(samples: int = 10000, features: int = 77, interval: Tuple[int
     trainset = TensorDataset(train_tensor_x, train_tensor_y)
     # dataloader = DataLoader(trainset, batch_size=batch, shuffle=False)
     return trainset
+
+@dataclass
+class Pack_Train:
+    model : torch.nn.Module
+    global_weight : dict
+    dataset : dict
+    local_update: function
+    args : parser
+    this_lr: float
+    device: torch.device
+    trainset: torch.TensorDataset
+    this_alpha: float
+
+@dataclass
+class Pack_Eval:
+    model: torch.nn.Module
+    participant_dataset_loader_table: disct
+    do_evaluation: function
+    device: torch.device
+    entropy: dict
+
+
+def training_participant(participant, pack: Pack_Train):
+    idxs = pack.dataset[participant]
+    local_setting = pack.local_update(args=pack.args, lr=pack.this_lr, local_epoch=pack.args.local_epochs, device=pack.device,
+                                 batch_size=pack.args.batch_size, dataset=pack.trainset, idxs=idxs,
+                                 alpha=pack.this_alpha)
+    weight, loss = local_setting.train(net=copy.deepcopy(pack.model).to(pack.device))
+    #local_weight.append(copy.deepcopy(weight)) retornar weight
+    #local_loss[participant] = copy.deepcopy(loss) retornar loss
+
+    #local_model = copy.deepcopy(model).to(device)
+    #local_model.load_state_dict(weight)
+
+    delta = {}
+    for key in weight.keys():
+        delta[key] = weight[key] - pack.global_weight[key]
+    #local_delta.append(delta)
+    return participant, weight, loss, delta, len(pack.dataset[participant])
+
+
+def eval_participant(participant, pack: Pack_Eval):
+    participant_dataset_loader = pack.participant_dataset_loader_table[participant]
+    if participant in pack.entropy.keys():
+        current_global_metrics = pack.do_evaluation(testloader=participant_dataset_loader, model=pack.model,
+                                                    device=pack.device, evaluate=False)
+    else:
+        current_global_metrics = pack.do_evaluation(testloader=participant_dataset_loader, model=pack.model,
+                                                    device=pack.device, evaluate=False, calc_entropy=True)
+        pack.entropy[participant] = current_global_metrics['entropy']
+    print(f'=> Participant {participant} loss: {current_global_metrics["loss"]}')
+
+    return current_global_metrics['loss'], pack.entropy[participant]
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
@@ -65,6 +122,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     loss_func = nn.CrossEntropyLoss()
     ig = {}
     entropy = {}
+    num_of_data_clients = {}
     participants_score = {idx: selected_participants_num/total_participants for idx in range(total_participants)}
     not_selected_participants = list(participants_score.keys())
     #ep_greedy = args.epsilon_greedy
@@ -76,10 +134,10 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     for epoch in range(args.global_epochs):
         print('starting a new epoch')
         wandb_dict = {}
-        num_of_data_clients = []
-        local_weight = []
+        num_of_data_clients = {}
+        local_weight = {}
         local_loss = {}
-        local_delta = []
+        local_delta = {}
         global_weight = copy.deepcopy(model.state_dict())
         eg_momentum = 0.9
 
@@ -118,7 +176,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         print('Training participants')
         #models_val_loss = {}
 
-        for participant in selected_participants:
+        # Treino dos modelos
+        '''for participant in selected_participants:
             #if participant < args.num_of_clients:
             num_of_data_clients.append(len(dataset[participant]))
             idxs = dataset[participant]
@@ -153,9 +212,23 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             delta = {}
             for key in weight.keys():
                 delta[key] = weight[key] - global_weight[key]
-            local_delta.append(delta)
+            local_delta.append(delta)'''
 
-        total_num_of_data_clients = sum(num_of_data_clients)
+        # participant, model, global_weight, dataset, local_update, args, this_lr,  device, trainset,
+        #this_alpha
+        # Returns: participant, weight, loss, delta, num_of_data_clients
+        pack = Pack_Train(model=model, global_weight=global_weight, dataset=dataset, local_update=local_update,
+                          args=args, this_lr=this_lr, device=device, trainset=trainset, this_alpha=this_alpha)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            for outpt in executor.map(training_participant, selected_participants, (pack for _ in range(len(selected_participants)))):
+                p, weight, loss, delta, dataset_size = outpt
+                local_weight[p] = copy.deepcopy(outpt[1])
+                local_loss[p] = copy.deepcopy(loss)
+                local_delta[p] = delta
+                num_of_data_clients[p] = dataset_size
+
+        total_num_of_data_clients = sum(num_of_data_clients.values())
         FedAvg_weight = copy.deepcopy(local_weight[0])
         for key in FedAvg_weight.keys():
             for i in range(len(local_weight)):
@@ -166,7 +239,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             FedAvg_weight[key] /= total_num_of_data_clients
         model.load_state_dict(FedAvg_weight)
 
-        loss_avg = sum(local_loss) / len(local_loss)
+        loss_avg = sum(local_loss.values()) / len(local_loss.values())
         print(' num_of_data_clients : ', num_of_data_clients)
         print(' Participants IDS: ', selected_participants)
         print(' Average loss {:.3f}'.format(loss_avg))
@@ -175,10 +248,10 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         # print(models_val_loss)
 
         # Calculating the Global loss
-        global_losses = []
+        global_losses = {}
         model.eval()
 
-        for participant in selected_participants:
+        '''for participant in selected_participants:
             participant_dataset_loader = participant_dataset_loader_table[participant]
             if participant in entropy.keys():
                 current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=model,
@@ -188,12 +261,17 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                                                        device=device, evaluate=False, calc_entropy=True)
                 entropy[participant] = current_global_metrics['entropy']
             global_losses.append(current_global_metrics['loss'])
-            print(f'=> Participant {participant} loss: {current_global_metrics["loss"]}')
+            print(f'=> Participant {participant} loss: {current_global_metrics["loss"]}')'''
+        pack_eval = Pack_Eval(model=model, participant_dataset_loader_table=participant_dataset_loader_table,
+                              do_evaluation=do_evaluation, device=device, entropy=entropy)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            for outpt in executor.map(training_participant, selected_participants, (pack for _ in range(len(selected_participants)))):
+                current_global_loss, current_entropy = outpt
+                global_losses[p] = current_global_loss
+                entropy[p] = current_entropy
 
-        global_loss = sum(global_losses) / len(global_losses)
+        global_loss = sum(global_losses.values()) / len(global_losses.values())
         print(f'=> Mean global loss: {global_loss}')
-
-        global_loss = sum(global_losses) / len(global_losses)
 
         print('performing the evaluation')
         model.eval()
