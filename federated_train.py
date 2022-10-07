@@ -50,6 +50,7 @@ def init_env(args):
 def main():
     """The main function of the federated learning simulator"""
     # initiate the simulator environment
+    global args
     args = run_args()
     init_env(args)
 
