@@ -38,6 +38,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     ig = {}
     entropy = {}
 
+    if not os.path.isdir('.tmp'):
+        os.mkdir('.tmp')
+
     save_dict_file('.tmp/ig.pkl', ig)
     save_dict_file('.tmp/participants_score.pkl', participants_score)
     save_dict_file('.tmp/not_selected_participants.pkl', not_selected_participants)
