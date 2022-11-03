@@ -53,7 +53,11 @@ def main():
     args = run_args()
     init_env(args)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        device = args.cuda_device
+    else:
+        device = torch.device("cpu")
 
     # Build Dataset
     dataset_factory = None

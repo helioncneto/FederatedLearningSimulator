@@ -104,12 +104,21 @@ def parse_arguments():
     )
     parser.add_argument(
         "-j",
+        "--cuda_device",
+        default="cuda:0",
+        type=str,
+        help="Name of cuda device if available (default: cuda:0)",
+    )
+
+    parser.add_argument(
+        "-j",
         "--workers",
         default=8,
         type=int,
         metavar="N",
         help="number of data loading workers (default: 20)",
     )
+
     parser.add_argument(
         "--create_client_dataset",
         action="store_true",
