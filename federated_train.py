@@ -59,6 +59,8 @@ def main():
     else:
         device = torch.device("cpu")
 
+    print(device)
+
     # Build Dataset
     dataset_factory = None
     try:
