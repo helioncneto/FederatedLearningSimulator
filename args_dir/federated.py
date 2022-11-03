@@ -103,7 +103,6 @@ def parse_arguments():
         help="which GPU to use",
     )
     parser.add_argument(
-        "-j",
         "--cuda_device",
         default="cuda:0",
         type=str,
