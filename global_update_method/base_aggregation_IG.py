@@ -110,6 +110,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             selected_participants, not_selected_participants = selection_ig(selected_participants_num, ep_greedy,
                                                                             not_selected_participants,
                                                                             participants_score,
+                                                                            args.temperature,
                                                                             participants_count=participants_count)
         print(' Participants IDS: ', selected_participants)
         print(f"This is global {epoch} epoch")

@@ -142,6 +142,7 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
                                                                                         not_selected_participants[
                                                                                             "not_selected"],
                                                                                         participants_score,
+                                                                                        args.temperature,
                                                                                         participants_count=participants_count)
     num_of_data_clients = []
     this_alpha = args.alpha

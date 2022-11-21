@@ -1,4 +1,5 @@
 import copy
+import math
 import pickle
 import random
 import numpy as np
@@ -7,8 +8,31 @@ from typing import Tuple, List
 __all__ = ['selection_ig', 'update_participants_score', 'calc_ig', 'load_from_file']
 
 
+def select_participant(selection_type: str, selection_helper: dict, greedy_index: int = 0):
+    if selection_type == "random":
+        return np.random.choice(list(selection_helper.keys()))
+    elif selection_type == "greedy":
+        return sorted(selection_helper, key=selection_helper.get, reverse=True)[greedy_index]
+
+
+def selection_on_blocked(selected, participants_count, temperature, selection_helper, selection_type):
+    print(f'Participant {selected} is blocked')
+    is_blocked = True
+    sel = 0
+    while is_blocked:
+        p = math.exp(-participants_count[selected] / (temperature))
+        rand = random.random()
+        if rand < p:
+            return selected
+        else:
+            sel += 1
+            selected = select_participant(selection_type, selection_helper, sel)
+            is_blocked = selected in participants_count.keys()
+    return selected
+
+
 def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_participants: List[int],
-                 participants_score: dict, participants_count: dict = {}) -> tuple:
+                 participants_score: dict, temperature: int, participants_count: dict = {}) -> tuple:
     selection_helper = copy.deepcopy(participants_score)
     selected_participants = []
     for _ in range(selected_participants_num):
@@ -19,23 +43,31 @@ def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_
                 selected = np.random.choice(not_selected_participants)
                 not_selected_participants.remove(selected)
             else:
-                selected = np.random.choice(list(selection_helper.keys()))
+                #selected = np.random.choice(list(selection_helper.keys()))
+                selected = select_participant("random", selection_helper)
                 if len(participants_count.keys()) != 0:
-                    while participants_count[selected] >= 3:
-                        print(f'Participant {selected} is blocked')
-                        selected = np.random.choice(list(selection_helper.keys()))
-
+                    if selected in participants_count.keys():
+                        selected = selection_on_blocked(selected, participants_count, temperature, selection_helper,
+                                                        "random")
+                    #while participants_count[selected] >= 3:
+                    #    print(f'Participant {selected} is blocked')
+                    #    selected = np.random.choice(list(selection_helper.keys()))
             selection_helper.pop(selected)
             selected_participants.append(selected)
         else:
             # Select the best participant
             print("Greedy selection")
             sel = 0
-            selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[sel]
-            while participants_count[selected] >= 3:
-                print(f'Participant {selected} is blocked')
-                sel += 1
-                selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[sel]
+            #selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[sel]
+            selected = select_participant("greedy", selection_helper, sel)
+            if len(participants_count.keys()) != 0:
+                if selected in participants_count.keys():
+                    selected = selection_on_blocked(selected, participants_count, temperature, selection_helper,
+                                                    "greedy")
+            #while participants_count[selected] >= 3:
+            #    print(f'Participant {selected} is blocked')
+            #    sel += 1
+            #    selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[sel]
             if selected in not_selected_participants:
                 not_selected_participants.remove(selected)
             selection_helper.pop(selected)
