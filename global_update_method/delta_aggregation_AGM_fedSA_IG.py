@@ -66,7 +66,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
     if valloader is not None:
         sa.model.eval()
-        test_metric = do_evaluation(testloader=testloader, model=sa.model, device=device)
+        test_metric = do_evaluation(testloader=valloader, model=sa.model, device=device)
         sa.model.train()
 
         print('Final Accuracy of the network on the 10000 test images: %f %%' % test_metric['accuracy'])

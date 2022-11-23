@@ -93,32 +93,35 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         print(' Participants IDS: ', selected_user)
         print(' Average loss {:.3f}'.format(loss_avg))
         loss_train.append(loss_avg)
-        loss_func = nn.NLLLoss()
+        #loss_func = nn.NLLLoss()
         prev_model = copy.deepcopy(model)
         prev_model.load_state_dict(global_weight)
-        if epoch % args.print_freq == 0:
-            model.eval()
-            metrics = do_evaluation(testloader=testloader, model=model, device=device, loss_func=loss_func,
-                                    prev_model=prev_model, alpha=args.alpha, mu=args.mu)
-            model.train()
-            # accuracy = (accuracy / len(testloader)) * 100
-            print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
-            print('Precision of the network on the 10000 test images: %f %%' % metrics['precision'])
-            print('Sensitivity of the network on the 10000 test images: %f %%' % metrics['sensitivity'])
-            print('Specificity of the network on the 10000 test images: %f %%' % metrics['specificity'])
-            print('F1-score of the network on the 10000 test images: %f %%' % metrics['f1score'])
+        #if epoch % args.print_freq == 0:
+
+        #model.eval()
+        #metrics = do_evaluation(testloader=testloader, model=model, device=device,
+        #                        prev_model=prev_model, alpha=args.alpha, mu=args.mu)
+        metrics = do_evaluation(testloader=testloader, model=model, device=device)
+
+        model.train()
+        # accuracy = (accuracy / len(testloader)) * 100
+        print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
+        print('Precision of the network on the 10000 test images: %f %%' % metrics['precision'])
+        print('Sensitivity of the network on the 10000 test images: %f %%' % metrics['sensitivity'])
+        print('Specificity of the network on the 10000 test images: %f %%' % metrics['specificity'])
+        print('F1-score of the network on the 10000 test images: %f %%' % metrics['f1score'])
 
 
-            wandb_dict[args.mode + "_acc"] = metrics['accuracy']
-            wandb_dict[args.mode + "_prec"] = metrics['precision']
-            wandb_dict[args.mode + "_sens"] = metrics['sensitivity']
-            wandb_dict[args.mode + "_spec"] = metrics['specificity']
-            wandb_dict[args.mode + "_f1"] = metrics['f1score']
-            wandb_dict[args.mode + '_loss'] = loss_avg
-            wandb_dict['lr'] = this_lr
-            if args.use_wandb:
-                print('logging to wandb...')
-                wandb.log(wandb_dict)
+        wandb_dict[args.mode + "_acc"] = metrics['accuracy']
+        wandb_dict[args.mode + "_prec"] = metrics['precision']
+        wandb_dict[args.mode + "_sens"] = metrics['sensitivity']
+        wandb_dict[args.mode + "_spec"] = metrics['specificity']
+        wandb_dict[args.mode + "_f1"] = metrics['f1score']
+        wandb_dict[args.mode + '_loss'] = loss_avg
+        wandb_dict['lr'] = this_lr
+        if args.use_wandb:
+            print('logging to wandb...')
+            wandb.log(wandb_dict)
             save((args.eval_path, args.mode + "_acc"), wandb_dict[args.mode + "_acc"])
             save((args.eval_path, args.mode + "_prec"), wandb_dict[args.mode + "_prec"])
             save((args.eval_path, args.mode + "_sens"), wandb_dict[args.mode + "_sens"])
@@ -135,8 +138,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
     if valloader is not None:
         model.eval()
-        test_metric = do_evaluation(valloader, model=model, device=device, loss_func=loss_func,
-                                    prev_model=prev_model, alpha=args.alpha, mu=args.mu)
+        #test_metric = do_evaluation(valloader, model=model, device=device, loss_func=loss_func,
+        #                            prev_model=prev_model, alpha=args.alpha, mu=args.mu)
+        do_evaluation(testloader=valloader, model=sa.model, device=device)
         model.train()
 
         print('Final Accuracy of the network on the 10000 test images: %f %%' % test_metric['accuracy'])
