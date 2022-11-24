@@ -29,9 +29,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     for key in global_delta.keys():
         global_delta[key] = torch.zeros_like(global_delta[key])
     for epoch in range(args.global_epochs):
-        wandb_dict={}
-        num_of_data_clients=[]
-        local_K=[]
+        wandb_dict = {}
+        num_of_data_clients = []
+        local_K = []
 
         local_weight = []
         local_loss = []
@@ -40,8 +40,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         # User selection
         if epoch == 0 or args.participation_rate < 1:
             selected_user = np.random.choice(range(args.num_of_clients), m, replace=False)
-        else:
-            pass 
+
         print(f"This is global {epoch} epoch")
 
         # AGM server model -> lookahead with global momentum
@@ -122,12 +121,12 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         if args.use_wandb:
             print('logging to wandb...')
             wandb.log(wandb_dict)
-            save((args.eval_path, args.mode + "_acc"), wandb_dict[args.mode + "_acc"])
-            save((args.eval_path, args.mode + "_prec"), wandb_dict[args.mode + "_prec"])
-            save((args.eval_path, args.mode + "_sens"), wandb_dict[args.mode + "_sens"])
-            save((args.eval_path, args.mode + "_spec"), wandb_dict[args.mode + "_spec"])
-            save((args.eval_path, args.mode + "_f1"), wandb_dict[args.mode + "_f1"])
-            save((args.eval_path, args.mode + "_loss"), wandb_dict[args.mode + "_loss"])
+        save((args.eval_path, args.mode + "_acc"), wandb_dict[args.mode + "_acc"])
+        save((args.eval_path, args.mode + "_prec"), wandb_dict[args.mode + "_prec"])
+        save((args.eval_path, args.mode + "_sens"), wandb_dict[args.mode + "_sens"])
+        save((args.eval_path, args.mode + "_spec"), wandb_dict[args.mode + "_spec"])
+        save((args.eval_path, args.mode + "_f1"), wandb_dict[args.mode + "_f1"])
+        save((args.eval_path, args.mode + "_loss"), wandb_dict[args.mode + "_loss"])
 
         this_lr *= args.learning_rate_decay
         this_tau *=args.server_learning_rate_decay
@@ -140,7 +139,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         model.eval()
         #test_metric = do_evaluation(valloader, model=model, device=device, loss_func=loss_func,
         #                            prev_model=prev_model, alpha=args.alpha, mu=args.mu)
-        do_evaluation(testloader=valloader, model=sa.model, device=device)
+        do_evaluation(testloader=valloader, model=model, device=device)
         model.train()
 
         print('Final Accuracy of the network on the 10000 test images: %f %%' % test_metric['accuracy'])
