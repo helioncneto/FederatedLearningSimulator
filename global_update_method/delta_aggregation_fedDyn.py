@@ -13,13 +13,15 @@ import matplotlib.pyplot as plt
 from utils import DatasetSplit
 from global_update_method.distcheck import check_data_distribution
 from torch.utils.data import DataLoader
+from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from utils import calculate_delta_cv,calculate_delta_variance, calculate_divergence_from_optimal,calculate_divergence_from_center
 from utils import CenterUpdate
 from utils import *
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
-    model = get_model(args)
+    model = get_model(args, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
+                      l2_norm=args.l2_norm)
     model.to(device)
     if args.use_wandb:
         wandb.watch(model)
