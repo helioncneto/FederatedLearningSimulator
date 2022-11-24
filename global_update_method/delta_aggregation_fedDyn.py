@@ -60,9 +60,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         global_weight = copy.deepcopy(model.state_dict())
         if (epoch == 0) or (args.participation_rate < 1):
             selected_user = np.random.choice(range(args.num_of_clients), m, replace=False)
-        else:
-            pass
-        print(f"This is global {epoch} epoch")
+
+        print(f'Aggregation Round: {epoch}')
 
         for user in selected_user:
             num_of_data_clients.append(len(dataset[user]))

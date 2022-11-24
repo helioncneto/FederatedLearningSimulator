@@ -41,7 +41,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
         # Sample participating agents for this global round
 
-        print(f"This is global {epoch} epoch")
+        print(f'Aggregation Round: {epoch}')
 
         print('Training participants')
         for participant in all_participants:

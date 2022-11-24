@@ -113,7 +113,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                                                                             args.temperature,
                                                                             participants_count=participants_count)
         print(' Participants IDS: ', selected_participants)
-        print(f"This is global {epoch} epoch")
+        print(f'Aggregation Round: {epoch}')
         if selected_participants is None:
             return
         print('Training participants')

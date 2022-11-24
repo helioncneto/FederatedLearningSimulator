@@ -41,7 +41,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         if epoch == 0 or args.participation_rate < 1:
             selected_user = np.random.choice(range(args.num_of_clients), m, replace=False)
 
-        print(f"This is global {epoch} epoch")
+        print(f'Aggregation Round: {epoch}')
 
         # AGM server model -> lookahead with global momentum
         sending_model_dict = copy.deepcopy(model.state_dict())

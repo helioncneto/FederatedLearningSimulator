@@ -40,7 +40,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     filepath = directory + '/' + args.mode + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
         args.num_of_clients) + '.txt'
 
-    # Todo: Fix this to be access in any directory
     oort_args = load_yaml_conf("libs/config/oort_config.yaml")
     selector = create_training_selector(oort_args)
     #initial_score = {'reward': 0, 'duration':0}
@@ -95,7 +94,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             selected_participants = selector.select_participant(args.num_of_clients)[:selected_participants_num]
 
         print(' Participants IDS: ', selected_participants)
-        print(f"This is global {epoch} epoch")
+        print(f'Aggregation Round: {epoch}')
         if selected_participants is None:
             return
         print('Training participants')
