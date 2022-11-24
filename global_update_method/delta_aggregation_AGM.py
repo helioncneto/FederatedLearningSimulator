@@ -139,7 +139,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         model.eval()
         #test_metric = do_evaluation(valloader, model=model, device=device, loss_func=loss_func,
         #                            prev_model=prev_model, alpha=args.alpha, mu=args.mu)
-        do_evaluation(testloader=valloader, model=model, device=device)
+        test_metric = do_evaluation(testloader=valloader, model=model, device=device)
         model.train()
 
         print('Final Accuracy of the network on the 10000 test images: %f %%' % test_metric['accuracy'])
