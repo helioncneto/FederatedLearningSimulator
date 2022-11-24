@@ -20,7 +20,7 @@ from utils import *
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
-    model = get_model(args, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
+    model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
     if args.use_wandb:
