@@ -1,7 +1,4 @@
-#!/usr/bin/env python
 # coding: utf-8
-
-# In[2]:
 
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import wandb
@@ -23,7 +20,8 @@ from utils import calculate_delta_cv,calculate_delta_variance, calculate_diverge
 from utils import CenterUpdate
 from utils import *
 
-def GlobalUpdate(args, device, trainset, testloader, local_update):
+
+def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
     model = get_model(args)
     model.to(device)
     if args.use_wandb:
@@ -48,19 +46,17 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
         global_momentum[key] = torch.zeros_like(global_momentum[key])
 
     for epoch in range(args.global_epochs):
-        wandb_dict={}
-        num_of_data_clients=[]
-        local_K=[]
+        wandb_dict = {}
+        num_of_data_clients = []
+        local_K = []
         
         local_weight = []
         local_loss = []
         local_delta = []
         global_weight = copy.deepcopy(model.state_dict())
-        if (epoch==0) or (args.participation_rate<1) :
+        if (epoch == 0) or (args.participation_rate < 1):
             selected_user = np.random.choice(range(args.num_of_clients), m, replace=False)
-        else:
-            pass 
-        print(f"This is global {epoch} epoch")
+        print(f'Aggregation Round: {epoch}')
 
         for user in selected_user:
             num_of_data_clients.append(len(dataset[user]))
@@ -76,7 +72,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
                 delta[key] = weight[key] - global_weight[key]
             local_delta.append(delta)
 
-        total_num_of_data_clients=sum(num_of_data_clients)
+        total_num_of_data_clients = sum(num_of_data_clients)
         FedAvg_weight = copy.deepcopy(local_weight[0])
         for key in FedAvg_weight.keys():
             for i in range(len(local_weight)):
@@ -106,7 +102,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
         print(' Average loss {:.3f}'.format(loss_avg))
         loss_train.append(loss_avg)
 
-        if epoch % args.print_freq == 0:
+        '''if epoch % args.print_freq == 0:
             model.eval()
             correct = 0
             total = 0
@@ -120,17 +116,52 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
 
             print('Accuracy of the network on the 10000 test images: %f %%' % (
                     100 * correct / float(total)))
-            acc_train.append(100 * correct / float(total))
-
+            acc_train.append(100 * correct / float(total))'''
+        metrics = do_evaluation(testloader=testloader, model=model, device=device)
         model.train()
-        wandb_dict[args.mode + "_acc"]=acc_train[-1]
-        wandb_dict[args.mode + '_loss']= loss_avg
-        wandb_dict['lr']=this_lr
+
+        print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
+        print('Precision of the network on the 10000 test images: %f %%' % metrics['precision'])
+        print('Sensitivity of the network on the 10000 test images: %f %%' % metrics['sensitivity'])
+        print('Specificity of the network on the 10000 test images: %f %%' % metrics['specificity'])
+        print('F1-score of the network on the 10000 test images: %f %%' % metrics['f1score'])
+
+        wandb_dict[args.mode + "_acc"] = metrics['accuracy']
+        wandb_dict[args.mode + "_prec"] = metrics['precision']
+        wandb_dict[args.mode + "_sens"] = metrics['sensitivity']
+        wandb_dict[args.mode + "_spec"] = metrics['specificity']
+        wandb_dict[args.mode + "_f1"] = metrics['f1score']
+        wandb_dict[args.mode + '_loss'] = loss_avg
+        wandb_dict['lr'] = this_lr
         if args.use_wandb:
             wandb.log(wandb_dict)
 
+        save((args.eval_path, args.global_method + "_acc"), wandb_dict[args.mode + "_acc"])
+        save((args.eval_path, args.global_method + "_prec"), wandb_dict[args.mode + "_prec"])
+        save((args.eval_path, args.global_method + "_sens"), wandb_dict[args.mode + "_sens"])
+        save((args.eval_path, args.global_method + "_spec"), wandb_dict[args.mode + "_spec"])
+        save((args.eval_path, args.global_method + "_f1"), wandb_dict[args.mode + "_f1"])
+        save((args.eval_path, args.global_method + "_loss"), wandb_dict[args.mode + "_loss"])
+
         this_lr *= args.learning_rate_decay
-        if args.alpha_mul_epoch == True:
+        if args.alpha_mul_epoch:
             this_alpha = args.alpha * (epoch + 1)
-        elif args.alpha_divide_epoch == True:
+        elif args.alpha_divide_epoch:
             this_alpha = args.alpha / (epoch + 1)
+
+    if valloader is not None:
+        model.eval()
+        test_metric = do_evaluation(testloader=valloader, model=model, device=device)
+        model.train()
+
+        print('Final Accuracy of the network on the 10000 test images: %f %%' % test_metric['accuracy'])
+        print('Final Precision of the network on the 10000 test images: %f %%' % test_metric['precision'])
+        print('Final Sensitivity of the network on the 10000 test images: %f %%' % test_metric['sensitivity'])
+        print('Final Specificity of the network on the 10000 test images: %f %%' % test_metric['specificity'])
+        print('Final F1-score of the network on the 10000 test images: %f %%' % test_metric['f1score'])
+
+        save((args.eval_path, args.global_method + "_test_acc"), test_metric['accuracy'])
+        save((args.eval_path, args.global_method + "_test_prec"), test_metric['precision'])
+        save((args.eval_path, args.global_method + "_test_sens"), test_metric['sensitivity'])
+        save((args.eval_path, args.global_method + "_test_spec"), test_metric['specificity'])
+        save((args.eval_path, args.global_method + "_test_f1"), test_metric['f1score'])

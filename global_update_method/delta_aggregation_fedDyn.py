@@ -154,15 +154,13 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
         this_lr *= args.learning_rate_decay
 
-        if args.alpha_mul_epoch == True:
+        if args.alpha_mul_epoch:
             this_alpha = args.alpha * (epoch + 1)
-        elif args.alpha_divide_epoch == True:
+        elif args.alpha_divide_epoch:
             this_alpha = args.alpha / (epoch + 1)
 
     if valloader is not None:
         model.eval()
-        #test_metric = do_evaluation(valloader, model=model, device=device, loss_func=loss_func,
-        #                            prev_model=prev_model, alpha=args.alpha, mu=args.mu)
         test_metric = do_evaluation(testloader=valloader, model=model, device=device)
         model.train()
 
