@@ -1,5 +1,5 @@
 # coding: utf-8
-
+from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import wandb
 import numpy as np
@@ -22,7 +22,8 @@ from utils import *
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
-    model = get_model(args)
+    model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
+                      l2_norm=args.l2_norm)
     model.to(device)
     if args.use_wandb:
         wandb.watch(model)
