@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 import numpy as np
 import torch
+from torch.utils.data import DataLoader
 from torch import nn
 
 from libs.methods.FedSA import SimulatedAnnealing
 from libs.methods.ig import selection_ig, update_participants_score, calc_ig, load_from_file, save_dict_file
-from utils import get_scheduler, get_optimizer, get_model, get_dataset
+from utils import get_scheduler, get_optimizer, get_model, get_dataset, DatasetSplit
 import wandb
 import copy
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
@@ -69,6 +70,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
 
 def participants_train(X, global_model, dataset, epoch, kwargs):
+    wandb_dict = {}
     lr = X[0]
     loss_func = nn.CrossEntropyLoss()
     eg_momentum = 0.9
@@ -91,11 +93,19 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
         ep_greedy = (ep_greedy * ep_greedy_decay) ** epoch
     not_selected_participants = load_from_file('.tmp/not_selected_participants.pkl')
     participants_score = load_from_file('.tmp/participants_score.pkl')
+    blocked = load_from_file('.tmp/blocked.pkl')
     ig = load_from_file('.tmp/ig.pkl')
+    participants_count = load_from_file('.tmp/participants_count.pkl')
+    entropy = load_from_file('.tmp/entropy.pkl')
 
-    #not_selected_participants = kwargs['not_selected_participants']
-    #participants_score = kwargs['participants_score']
-    #ig = kwargs['ig']
+    if len(blocked) > 0:
+        parts_to_ublock = []
+        for part, since in blocked.items():
+            if since + int(args.num_of_clients / selected_participants_num) <= epoch:
+                parts_to_ublock.append(part)
+                participants_count[part] = 0
+
+        [blocked.pop(part) for part in parts_to_ublock]
 
     if epoch == 1 or args.participation_rate >= 1:
         print('Selecting the participants')
@@ -105,26 +115,33 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
         selected_participants = np.random.choice(range(args.num_of_clients),
                                                  selected_participants_num,
                                                  replace=False)
-        not_selected_participants["not_selected"] = list(set(not_selected_participants["not_selected"]) - set(selected_participants))
+        not_selected_participants["not_selected"] = list(
+            set(not_selected_participants["not_selected"]) - set(selected_participants))
 
     else:
-        selected_participants, not_selected_participants["not_selected"] = selection_ig(selected_participants_num, ep_greedy,
-                                                                        not_selected_participants["not_selected"],
-                                                                        participants_score)
-
-
+        selected_participants, not_selected_participants["not_selected"] = selection_ig(selected_participants_num,
+                                                                                        ep_greedy,
+                                                                                        not_selected_participants[
+                                                                                            "not_selected"],
+                                                                                        participants_score,
+                                                                                        args.temperature,
+                                                                                        participants_count=participants_count)
     num_of_data_clients = []
     this_alpha = args.alpha
     local_weight = []
     local_loss = []
     local_delta = []
     global_weight = copy.deepcopy(global_model.state_dict())
-    wandb_dict = {}
+    #wandb_dict = {}
 
     print(f'Aggregation Round: {epoch}')
-    models_val_loss = {}
+    #models_val_loss = {}
 
     for participant in selected_participants:
+        participants_count[participant] += 1
+        if participants_count[participant] >= 3:
+            blocked[participant] = epoch
+        print(f'Training participant: {participant}')
         num_of_data_clients.append(len(dataset[participant]))
         local_setting = local_update(args=args, lr=lr, local_epoch=local_epochs, device=device,
                                      batch_size=args.batch_size, dataset=trainset, idxs=dataset[participant],
@@ -136,14 +153,14 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
         local_model.load_state_dict(weight)
         local_model.eval()
 
-        batch_loss = []
+        '''batch_loss = []
         with torch.no_grad():
             for x, labels in testloader:
                 x, labels = x.to(device), labels.to(device)
                 outputs = local_model(x)
                 local_val_loss = loss_func(outputs, labels)
                 batch_loss.append(local_val_loss.item())
-            models_val_loss[participant] = (sum(batch_loss) / len(batch_loss))
+            models_val_loss[participant] = (sum(batch_loss) / len(batch_loss))'''
 
         delta = {}
         for key in weight.keys():
@@ -160,25 +177,64 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
                 FedAvg_weight[key] += local_weight[i][key] * num_of_data_clients[i]
         FedAvg_weight[key] /= total_num_of_data_clients
     global_model.load_state_dict(FedAvg_weight)
-
     loss_avg = sum(local_loss) / len(local_loss)
     print(' num_of_data_clients : ', num_of_data_clients)
     print(' Participants IDS: ', selected_participants)
     print(' Average loss {:.3f}'.format(loss_avg))
     loss_train.append(loss_avg)
+
     global_model.eval()
-    metrics = do_evaluation(testloader, global_model, device)
+
+    global_losses = []
+    global_model.eval()
+
+    for participant in selected_participants:
+        participant_dataset_loader = DataLoader(DatasetSplit(trainset, dataset[participant]),
+                                                batch_size=args.batch_size, shuffle=True)
+        if participant in entropy.keys():
+            current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=global_model,
+                                                   device=device,
+                                                   evaluate=False)
+        else:
+            current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=global_model,
+                                                   device=device, evaluate=False, calc_entropy=True)
+            entropy[participant] = current_global_metrics['entropy']
+        global_losses.append(current_global_metrics['loss'])
+        print(f'=> Participant {participant} loss: {current_global_metrics["loss"]}')
+
+    global_loss = sum(global_losses) / len(global_losses)
+    print(f'=> Mean global loss: {global_loss}')
+
+    print('performing the evaluation')
+    metrics = do_evaluation(testloader=testloader, model=global_model, device=device)
+
     global_model.train()
 
-    cur_ig = calc_ig(metrics['loss'], models_val_loss, total_num_of_data_clients, num_of_data_clients)
+    cur_ig = calc_ig(global_loss, local_loss, entropy)
 
     participants_score, ig = update_participants_score(participants_score, cur_ig, ig, eg_momentum)
 
     save_dict_file('.tmp/ig.pkl', ig)
     save_dict_file('.tmp/participants_score.pkl', participants_score)
     save_dict_file('.tmp/not_selected_participants.pkl', not_selected_participants)
+    save_dict_file('.tmp/blocked.pkl', blocked)
+    save_dict_file('.tmp/participants_count.pkl', participants_count)
+    save_dict_file('.tmp/entropy.pkl', entropy)
 
-    print(participants_score)
+    print(f'Participants score: {participants_score}')
+
+    #metrics = do_evaluation(testloader, global_model, device)
+    #global_model.train()
+
+    #cur_ig = calc_ig(metrics['loss'], models_val_loss, total_num_of_data_clients, num_of_data_clients)
+
+    #participants_score, ig = update_participants_score(participants_score, cur_ig, ig, eg_momentum)
+
+    #save_dict_file('.tmp/ig.pkl', ig)
+    #save_dict_file('.tmp/participants_score.pkl', participants_score)
+    #save_dict_file('.tmp/not_selected_participants.pkl', not_selected_participants)
+
+    #print(participants_score)
 
     # accuracy = (accuracy / len(testloader)) * 100
     print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
@@ -186,8 +242,7 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     print('Sensitivity of the network on the 10000 test images: %f %%' % metrics['sensitivity'])
     print('Specificity of the network on the 10000 test images: %f %%' % metrics['specificity'])
     print('F1-score of the network on the 10000 test images: %f %%' % metrics['f1score'])
-    print(f'Information Gain: {ig}')
-    print(f'Participants loss: {models_val_loss}')
+    print('Entropy: ', entropy)
     # acc_train.append(accuracy)
 
     wandb_dict[args.mode + "_acc"] = metrics['accuracy']
