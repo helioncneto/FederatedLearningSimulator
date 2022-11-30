@@ -129,7 +129,7 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
     num_of_data_clients = []
     this_alpha = args.alpha
     local_weight = []
-    local_loss = []
+    local_loss = {}
     local_delta = []
     global_weight = copy.deepcopy(global_model.state_dict())
     #wandb_dict = {}
@@ -148,7 +148,7 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
                                      alpha=this_alpha)
         weight, loss = local_setting.train(net=copy.deepcopy(global_model).to(device))
         local_weight.append(copy.deepcopy(weight))
-        local_loss.append(copy.deepcopy(loss))
+        local_loss[participant] = copy.deepcopy(loss)
         local_model = copy.deepcopy(global_model).to(device)
         local_model.load_state_dict(weight)
         local_model.eval()
@@ -177,7 +177,7 @@ def participants_train(X, global_model, dataset, epoch, kwargs):
                 FedAvg_weight[key] += local_weight[i][key] * num_of_data_clients[i]
         FedAvg_weight[key] /= total_num_of_data_clients
     global_model.load_state_dict(FedAvg_weight)
-    loss_avg = sum(local_loss) / len(local_loss)
+    loss_avg = sum(local_loss.values()) / len(local_loss)
     print(' num_of_data_clients : ', num_of_data_clients)
     print(' Participants IDS: ', selected_participants)
     print(' Average loss {:.3f}'.format(loss_avg))
