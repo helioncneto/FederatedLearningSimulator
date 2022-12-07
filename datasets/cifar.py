@@ -83,6 +83,7 @@ def cifar_dirichlet_unbalanced(dataset, n_nets, alpha=0.5):
     #X_train=dataset[:][0]
     y_train=torch.zeros(len(dataset),dtype=torch.long)
     print(y_train.dtype)
+    print(dataset)
     for a in range(len(dataset)):
         y_train[a]=(dataset[a][1])
     n_train = len(dataset)
