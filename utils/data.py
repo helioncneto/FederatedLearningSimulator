@@ -68,6 +68,7 @@ def get_dataset(args, trainset, num_of_clients=5, mode='iid', compatible=True, d
     elif directory is None or filepath is None:
         raise Exception("Directory and Filepath can't be None")
 
+    print(num_of_clients)
     check_already_exist = os.path.isfile(filepath) and (os.stat(filepath).st_size != 0)
     create_new_client_data = not check_already_exist or args.create_client_dataset
     print("create new client data: " + str(create_new_client_data))

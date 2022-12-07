@@ -218,6 +218,7 @@ def gen_train_fake(samples: int = 10000, features: int = 77, interval: Tuple[int
 def add_malicious_participants(args, directory: str, filepath: str) -> Tuple[TensorDataset, dict]:
     print("=> Training with malicious participants!")
     participants_fake_num = int(args.num_of_clients * args.malicious_rate)
+    print(participants_fake_num)
     trainset_fake = gen_train_fake(samples=args.num_fake_data)
     dataset_fake = get_dataset(args, trainset_fake, num_of_clients=participants_fake_num, mode=args.mode, compatible=False,
                                directory=directory, filepath=filepath)
