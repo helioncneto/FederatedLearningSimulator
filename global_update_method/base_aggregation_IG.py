@@ -118,6 +118,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         if selected_participants is None:
             return
         print('Training participants')
+        print(trainset[0])
         #models_val_loss = {}
 
         for participant in selected_participants:
