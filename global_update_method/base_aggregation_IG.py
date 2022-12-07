@@ -43,12 +43,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     filepath = directory + '/' + args.mode + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
         args.num_of_clients) + '.txt'
 
-    # Gen fake data
-    selected_participants_fake_num = args.num_of_clients
 
-    # trainset_fake = gen_train_fake(samples=1500000) # 1590000
-    # dataset_fake = get_dataset(args, trainset_fake, args.mode, compatible=False,
-                               #directory=directory, filepath=filepath, participants=selected_participants_fake_num)
 
     loss_train = []
     acc_train = []
@@ -58,6 +53,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     #total_participants = args.num_of_clients + selected_participants_fake_num
     total_participants = args.num_of_clients
     selected_participants_num = max(int(args.participation_rate * total_participants), 1)
+    dataset_fake = {}
+    trainset_fake = None
     #selected_participants = None
     # selected_participants_fake = np.random.choice(range(5),
                                                   #selected_participants_fake_num,
@@ -72,6 +69,14 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     ep_greedy_decay = pow(0.01, 1/args.global_epochs)
     participants_count = {participant: 0 for participant in list(participants_score.keys())}
     blocked = {}
+
+    # Gen fake data
+    if args.malicious_rate > 0:
+        print("=> Training with malicious participants!")
+        participants_fake_num = int(args.num_of_clients * args.malicious_rate)
+        trainset_fake = gen_train_fake(samples=args.num_fake_data)  # 1590000
+        dataset_fake = get_dataset(args, trainset_fake, args.mode, compatible=False,
+                                   directory=directory, filepath=filepath, participants=participants_fake_num)
 
     for epoch in range(args.global_epochs):
         print('starting a new epoch')
@@ -121,11 +126,23 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
         for participant in selected_participants:
             #if participant < args.num_of_clients:
-            num_of_data_clients.append(len(dataset[participant]))
-            idxs = dataset[participant]
-            local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                         batch_size=args.batch_size, dataset=trainset, idxs=idxs,
-                                         alpha=this_alpha)
+            if participant in dataset_fake.keys():
+                num_of_data_clients.append(len(dataset[participant]))
+                idxs = dataset_fake[participant]
+                local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
+                                             batch_size=args.batch_size, dataset=trainset, idxs=idxs,
+                                             alpha=this_alpha)
+            else:
+                print(f"Training malicious participant {participant}.")
+                num_of_data_clients.append(len(dataset[participant]))
+                idxs = dataset[participant]
+                if trainset_fake is not None:
+                    local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
+                                                 batch_size=args.batch_size, dataset=trainset_fake, idxs=idxs,
+                                                 alpha=this_alpha)
+                else:
+                    print("The fake trainset is null!")
+                    return
             #else:
                 #num_of_data_clients.append(len(dataset_fake[participant - args.num_of_clients]))
                 #idxs = dataset_fake[participant - args.num_of_clients]

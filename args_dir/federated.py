@@ -93,10 +93,16 @@ def parse_arguments():
         "--additional_experiment_name", help="specific information for logging", default=""
     )
     parser.add_argument(
-        "--seed", default=0, type=int, help="seed for initializing training. "
+        "--seed", default=0, type=int, help="seed for initializing training."
     )
     parser.add_argument(
-        "--temperature", default=20, type=int, help="Temperature for selection on blocked participants. "
+        "--temperature", default=20, type=int, help="Temperature for selection on blocked participants."
+    )
+    parser.add_argument(
+        "--malicious_rate", default=0, type=float, help="Malicious participants rate. 0 for no malicious participants."
+    )
+    parser.add_argument(
+        "--num_fake_data", default=1500000, type=int, help="Number of fake samples."
     )
     parser.add_argument(
         "--cuda_visible_device",
