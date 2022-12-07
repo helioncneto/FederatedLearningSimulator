@@ -217,8 +217,9 @@ def add_malicious_participants(args, directory: str, filepath: str) -> Tuple[Ten
     print("=> Training with malicious participants!")
     participants_fake_num = int(args.num_of_clients * args.malicious_rate)
     trainset_fake = gen_train_fake(samples=args.num_fake_data)
-    dataset_fake = get_dataset(args, trainset_fake, args.mode, compatible=False,
-                               directory=directory, filepath=filepath, participants=participants_fake_num)
+    dataset_fake = get_dataset(args, trainset_fake, num_of_clients=participants_fake_num, mode=args.mode, compatible=False,
+                               directory=directory, filepath=filepath)
+    print(dataset_fake.keys())
     return trainset_fake, dataset_fake
 
 
