@@ -9,6 +9,25 @@ import torch.nn as nn
 __all__ = ['DatasetSplit', 'DatasetSplitMultiView', 'get_dataset']
 
 
+class FakeCICIDS2017Dataset(Dataset):
+    """An abstract Dataset class wrapped around Pytorch Dataset class.
+    """
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.idxs = [int(i) for i in range(len(x))]
+        self.class_to_idx = {0: "Benign", 1: "Attack"}
+
+    def __len__(self):
+        return len(self.idxs)
+
+    def __getitem__(self, item):
+        #image, label = self.dataset[self.idxs[item]]
+        #return torch.tensor(image), torch.tensor(label)
+        return torch.tensor(self.x[item]), torch.tensor(self.y[item])
+
+
 class DatasetSplit(Dataset):
     """An abstract Dataset class wrapped around Pytorch Dataset class.
     """

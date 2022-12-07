@@ -17,6 +17,7 @@ __all__ = ['l2norm', 'count_label_distribution', 'check_data_distribution', 'che
            'do_evaluation']
 
 from utils import get_dataset
+from utils.data import FakeCICIDS2017Dataset
 
 
 def l2norm(x,y):
@@ -208,7 +209,8 @@ def gen_train_fake(samples: int = 10000, features: int = 77, interval: Tuple[int
     train_tensor_x = torch.Tensor(train_np_x)
     train_tensor_y = torch.Tensor(train_np_y)
 
-    trainset = TensorDataset(train_tensor_x, train_tensor_y)
+    #trainset = TensorDataset(train_tensor_x, train_tensor_y)
+    trainset = FakeCICIDS2017Dataset(train_tensor_x, train_tensor_y)
     # dataloader = DataLoader(trainset, batch_size=batch, shuffle=False)
     return trainset
 
