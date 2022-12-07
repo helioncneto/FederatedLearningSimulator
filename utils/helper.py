@@ -202,7 +202,8 @@ def gen_train_fake(samples: int = 10000, features: int = 77, interval: Tuple[int
                    classes: tuple = (0, 1)) -> TensorDataset:
     train_np_x = np.array(
         [[np.random.uniform(interval[0], interval[1]) for _ in range(features)] for _ in range(samples)])
-    train_np_y = np.array([shuffle(np.array(classes)) for _ in range(samples)])
+    #train_np_y = np.array([shuffle(np.array(classes)) for _ in range(samples)])
+    train_np_y = np.array([np.random.choice(classes) for _ in range(samples)])
 
     train_tensor_x = torch.Tensor(train_np_x)
     train_tensor_y = torch.Tensor(train_np_y)
