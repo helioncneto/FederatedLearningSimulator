@@ -8,14 +8,15 @@ import models
 import torch.optim as optim
 import torch
 import torch.nn as nn
-
+from torch.utils.data import DataLoader, TensorDataset
+from typing import Tuple
 from libs.evaluation.metrics import Evaluator
 
 __all__ = ['l2norm', 'count_label_distribution', 'check_data_distribution', 'check_data_distribution_aug',
            'feature_extractor', 'classifier', 'get_model', 'get_optimizer', 'get_scheduler', 'save', 'shuffle',
            'do_evaluation']
 
-
+from utils import get_dataset
 
 
 def l2norm(x,y):
@@ -195,6 +196,29 @@ def do_evaluation(testloader, model, device: torch.device, evaluate: bool = True
         metrics['entropy'] = entropy
     model.train()
     return metrics
+
+
+def gen_train_fake(samples: int = 10000, features: int = 77, interval: Tuple[int, int] = (0, 1),
+                   classes: tuple = (0, 1)) -> TensorDataset:
+    train_np_x = np.array(
+        [[np.random.uniform(interval[0], interval[1]) for _ in range(features)] for _ in range(samples)])
+    train_np_y = np.array([shuffle(np.array(classes)) for _ in range(samples)])
+
+    train_tensor_x = torch.Tensor(train_np_x)
+    train_tensor_y = torch.Tensor(train_np_y)
+
+    trainset = TensorDataset(train_tensor_x, train_tensor_y)
+    # dataloader = DataLoader(trainset, batch_size=batch, shuffle=False)
+    return trainset
+
+
+def add_malicious_participants(args, directory: str, filepath: str) -> Tuple[TensorDataset, dict]:
+    print("=> Training with malicious participants!")
+    participants_fake_num = int(args.num_of_clients * args.malicious_rate)
+    trainset_fake = gen_train_fake(samples=args.num_fake_data)
+    dataset_fake = get_dataset(args, trainset_fake, args.mode, compatible=False,
+                               directory=directory, filepath=filepath, participants=participants_fake_num)
+    return trainset_fake, dataset_fake
 
 
 def get_scheduler(optimizer, args):

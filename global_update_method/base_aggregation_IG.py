@@ -6,7 +6,7 @@ import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from torch.utils.data import DataLoader, TensorDataset
-from utils.helper import save, shuffle, do_evaluation
+from utils.helper import save, shuffle, do_evaluation, add_malicious_participants
 
 
 def gen_train_fake(samples: int = 10000, features: int = 77, interval: Tuple[int, int] = (0, 1),
@@ -72,11 +72,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
     # Gen fake data
     if args.malicious_rate > 0:
-        print("=> Training with malicious participants!")
-        participants_fake_num = int(args.num_of_clients * args.malicious_rate)
-        trainset_fake = gen_train_fake(samples=args.num_fake_data)  # 1590000
-        dataset_fake = get_dataset(args, trainset_fake, args.mode, compatible=False,
-                                   directory=directory, filepath=filepath, participants=participants_fake_num)
+        trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
 
     for epoch in range(args.global_epochs):
         print('starting a new epoch')
