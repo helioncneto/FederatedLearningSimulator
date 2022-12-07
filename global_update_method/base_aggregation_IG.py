@@ -122,7 +122,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
         for participant in selected_participants:
             #if participant < args.num_of_clients:
-            if participant in dataset_fake.keys():
+            if participant not in dataset_fake.keys():
                 num_of_data_clients.append(len(dataset[participant]))
                 idxs = dataset_fake[participant]
                 local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
