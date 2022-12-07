@@ -124,14 +124,14 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             #if participant < args.num_of_clients:
             if participant not in dataset_fake.keys():
                 num_of_data_clients.append(len(dataset[participant]))
-                idxs = dataset_fake[participant]
+                idxs = dataset[participant]
                 local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
                                              batch_size=args.batch_size, dataset=trainset, idxs=idxs,
                                              alpha=this_alpha)
             else:
                 print(f"Training malicious participant {participant}.")
-                num_of_data_clients.append(len(dataset[participant]))
-                idxs = dataset[participant]
+                num_of_data_clients.append(len(dataset_fake[participant]))
+                idxs = dataset_fake[participant]
                 if trainset_fake is not None:
                     local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
                                                  batch_size=args.batch_size, dataset=trainset_fake, idxs=idxs,
