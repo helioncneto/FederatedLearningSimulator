@@ -206,8 +206,8 @@ def gen_train_fake(samples: int = 10000, features: int = 77, interval: Tuple[int
     #train_np_y = np.array([shuffle(np.array(classes)) for _ in range(samples)])
     train_np_y = np.array([np.random.choice(classes) for _ in range(samples)])
 
-    train_tensor_x = torch.Tensor(train_np_x)
-    train_tensor_y = torch.Tensor(train_np_y)
+    train_tensor_x = torch.from_numpy(train_np_x)
+    train_tensor_y = torch.from_numpy(train_np_y)
 
     #trainset = TensorDataset(train_tensor_x, train_tensor_y)
     trainset = FakeCICIDS2017Dataset(train_tensor_x, train_tensor_y)
