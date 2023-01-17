@@ -113,7 +113,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             return
         print('Training participants')
         #models_val_loss = {}
-        malicious_list = []
+        malicious_list = {}
 
         for participant in selected_participants:
             #if participant < args.num_of_clients:
@@ -123,7 +123,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
                                          batch_size=args.batch_size, dataset=current_trainset, idxs=idxs,
                                          alpha=this_alpha)
-            malicious_list.append(malicious)
+            malicious_list[participant] = malicious
 
             weight, loss = local_setting.train(net=copy.deepcopy(model).to(device))
             local_weight.append(copy.deepcopy(weight))
