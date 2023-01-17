@@ -35,7 +35,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         wandb.watch(model)
     model.train()
 
-    dataset = get_dataset(args, trainset, args.mode)
+    dataset = get_dataset(args, trainset, args.num_of_clients, args.mode)
     directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced_fake'
     filepath = directory + '/' + args.mode + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
         args.num_of_clients) + '.txt'

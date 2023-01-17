@@ -32,7 +32,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     epoch_loss = []
     weight_saved = model.state_dict()
 
-    dataset = get_dataset(args, trainset, args.mode)
+    dataset = get_dataset(args, trainset, args.num_of_clients, args.mode)
     loss_train = []
     acc_train = []
     this_lr = args.lr

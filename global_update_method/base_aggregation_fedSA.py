@@ -19,7 +19,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         wandb.watch(model)
     model.train()
 
-    dataset = get_dataset(args, trainset, args.mode)
+    dataset = get_dataset(args, trainset, args.num_of_clients, args.mode)
     loss_train = []
     acc_train = []
 
