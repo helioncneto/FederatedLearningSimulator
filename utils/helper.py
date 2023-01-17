@@ -216,12 +216,22 @@ def gen_train_fake(samples: int = 10000, features: int = 77, interval: Tuple[int
     return trainset
 
 
+def reorder_dictionary(src_dict: dict, range_list: list) -> dict:
+    num_items = len(src_dict)
+    new_keys = np.random.choice(range_list, num_items, replace=False)
+    new_dict = {}
+    for i in src_dict.keys():
+        new_dict[new_keys[i]] = copy.deepcopy(src_dict[i])
+    return new_dict
+
+
 def add_malicious_participants(args, directory: str, filepath: str) -> Tuple[TensorDataset, dict]:
     print("=> Training with malicious participants!")
     participants_fake_num = int(args.num_of_clients * args.malicious_rate)
     trainset_fake = gen_train_fake(samples=args.num_fake_data)
     dataset_fake = get_dataset(args, trainset_fake, num_of_clients=participants_fake_num, mode=args.mode, compatible=False,
                                directory=directory, filepath=filepath)
+    dataset_fake = reorder_dictionary(dataset_fake, list(range(args.num_of_clients)))
     print(dataset_fake.keys())
     return trainset_fake, dataset_fake
 
