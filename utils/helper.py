@@ -253,7 +253,7 @@ def get_participant_loader(participant, current_trainset, participant_dataset_lo
                            malicious_participant_dataset_loader_table):
 
     print(current_trainset)
-    print(current_trainset == FakeCICIDS2017Dataset)
+    print(type(current_trainset) is FakeCICIDS2017Dataset)
 
 
 def get_scheduler(optimizer, args):

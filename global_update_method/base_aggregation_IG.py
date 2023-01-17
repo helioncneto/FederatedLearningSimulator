@@ -68,8 +68,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     else:
         trainset_fake, dataset_fake = {}, {}
 
-
-
     for epoch in range(args.global_epochs):
         print('starting a new epoch')
         wandb_dict = {}
