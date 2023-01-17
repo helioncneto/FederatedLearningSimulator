@@ -8,7 +8,7 @@ import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from torch.utils.data import DataLoader, TensorDataset
-from utils.helper import save, shuffle, do_evaluation
+from utils.helper import save, shuffle, do_evaluation, add_malicious_participants
 from libs.methods.Oort import create_training_selector
 from libs.config.config import load_yaml_conf
 
@@ -66,6 +66,11 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     # selected_participants_fake = np.random.choice(range(5),
                                                   #selected_participants_fake_num,
                                                   #replace=False)
+    # Gen fake data
+    if args.malicious_rate > 0:
+        trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
+    else:
+        trainset_fake, dataset_fake = {}, {}
 
     for epoch in range(args.global_epochs):
         print('starting a new epoch')
@@ -90,7 +95,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                                                      selected_participants_num,
                                                      replace=False)
         else:
-            # Todo: Do the selection here and remove the code bellow. Don't forget to update the count
             selected_participants = selector.select_participant(args.num_of_clients)[:selected_participants_num]
 
         print(' Participants IDS: ', selected_participants)
@@ -101,19 +105,24 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
         for participant in selected_participants:
             #if participant < args.num_of_clients:
-            start_time = time.time()
-            num_of_data_clients.append(len(dataset[participant]))
-            idxs = dataset[participant]
-            local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                         batch_size=args.batch_size, dataset=trainset, idxs=idxs,
-                                         alpha=this_alpha)
-            #else:
-                #num_of_data_clients.append(len(dataset_fake[participant - args.num_of_clients]))
-                #idxs = dataset_fake[participant - args.num_of_clients]
-                #local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                             #batch_size=args.batch_size, dataset=trainset_fake,
-                                             #idxs=idxs,
-                                             #alpha=this_alpha)
+            if participant not in dataset_fake.keys():
+                start_time = time.time()
+                num_of_data_clients.append(len(dataset[participant]))
+                idxs = dataset[participant]
+                local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
+                                             batch_size=args.batch_size, dataset=trainset, idxs=idxs,
+                                             alpha=this_alpha)
+            else:
+                print(f"Training malicious participant {participant}.")
+                num_of_data_clients.append(len(dataset_fake[participant]))
+                idxs = dataset_fake[participant]
+                if trainset_fake is not None:
+                    local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
+                                                 batch_size=args.batch_size, dataset=trainset_fake, idxs=idxs,
+                                                 alpha=this_alpha)
+                else:
+                    print("The fake trainset is null!")
+                    return
 
             weight, loss = local_setting.train(net=copy.deepcopy(model).to(device))
             local_weight.append(copy.deepcopy(weight))

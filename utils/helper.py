@@ -236,6 +236,26 @@ def add_malicious_participants(args, directory: str, filepath: str) -> Tuple[Ten
     return trainset_fake, dataset_fake
 
 
+def get_participant(args, participant, dataset, dataset_fake, num_of_data_clients, trainset, trainset_fake):
+    if participant not in dataset_fake.keys():
+        num_of_data_clients.append(len(dataset[participant]))
+        idxs = dataset[participant]
+        current_trainset = trainset
+    else:
+        print(f"Training malicious participant {participant}.")
+        num_of_data_clients.append(len(dataset_fake[participant]))
+        idxs = dataset_fake[participant]
+        current_trainset = trainset_fake
+    return num_of_data_clients, idxs, current_trainset
+
+
+def get_participant_loader(participant, current_trainset, participant_dataset_loader_table,
+                           malicious_participant_dataset_loader_table):
+
+    print(current_trainset)
+    print(current_trainset == FakeCICIDS2017Dataset)
+
+
 def get_scheduler(optimizer, args):
     if args.set=='CIFAR10':
 

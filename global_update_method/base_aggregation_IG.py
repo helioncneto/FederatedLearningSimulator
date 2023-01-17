@@ -6,7 +6,8 @@ import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from torch.utils.data import DataLoader, TensorDataset
-from utils.helper import save, shuffle, do_evaluation, add_malicious_participants
+from utils.helper import save, shuffle, do_evaluation, add_malicious_participants, get_participant, \
+    get_participant_loader
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
@@ -20,6 +21,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     dataset = get_dataset(args, trainset, args.num_of_clients, args.mode)
     print("Preparing participants evaluation datasets")
     participant_dataset_loader_table = {}
+    malicious_participant_dataset_loader_table = {}
     for participant in range(args.num_of_clients):
         participant_dataset_ldr = DataLoader(DatasetSplit(trainset, dataset[participant]),
                                              batch_size=args.batch_size, shuffle=True)
@@ -59,6 +61,14 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     # Gen fake data
     if args.malicious_rate > 0:
         trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
+        for participant in dataset_fake.keys():
+            malicious_participant_dataset_ldr = DataLoader(DatasetSplit(trainset_fake, dataset_fake[participant]),
+                                                           batch_size=args.batch_size, shuffle=True)
+            malicious_participant_dataset_loader_table[participant] = malicious_participant_dataset_ldr
+    else:
+        trainset_fake, dataset_fake = {}, {}
+
+
 
     for epoch in range(args.global_epochs):
         print('starting a new epoch')
@@ -107,31 +117,18 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         #models_val_loss = {}
 
         for participant in selected_participants:
+            _, _, current_trainset = get_participant(args, participant, dataset, dataset_fake,
+                                               num_of_data_clients, trainset, trainset_fake)
+            get_participant_loader(participant, current_trainset, participant_dataset_loader_table,
+                           malicious_participant_dataset_loader_table)
+
+        for participant in selected_participants:
             #if participant < args.num_of_clients:
-            if participant not in dataset_fake.keys():
-                num_of_data_clients.append(len(dataset[participant]))
-                idxs = dataset[participant]
-                local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                             batch_size=args.batch_size, dataset=trainset, idxs=idxs,
-                                             alpha=this_alpha)
-            else:
-                print(f"Training malicious participant {participant}.")
-                num_of_data_clients.append(len(dataset_fake[participant]))
-                idxs = dataset_fake[participant]
-                if trainset_fake is not None:
-                    local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                                 batch_size=args.batch_size, dataset=trainset_fake, idxs=idxs,
-                                                 alpha=this_alpha)
-                else:
-                    print("The fake trainset is null!")
-                    return
-            #else:
-                #num_of_data_clients.append(len(dataset_fake[participant - args.num_of_clients]))
-                #idxs = dataset_fake[participant - args.num_of_clients]
-                #local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                             #batch_size=args.batch_size, dataset=trainset_fake,
-                                             #idxs=idxs,
-                                             #alpha=this_alpha)
+            num_of_data_clients, idxs, current_trainset = get_participant(args, participant, dataset, dataset_fake,
+                                                                          num_of_data_clients, trainset, trainset_fake)
+            local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
+                                         batch_size=args.batch_size, dataset=current_trainset, idxs=idxs,
+                                         alpha=this_alpha)
 
             weight, loss = local_setting.train(net=copy.deepcopy(model).to(device))
             local_weight.append(copy.deepcopy(weight))
@@ -179,7 +176,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         model.eval()
 
         for participant in selected_participants:
-            participant_dataset_loader = participant_dataset_loader_table[participant]
+            participant_dataset_loader = get_participant_loader(participant, current_trainset,
+                                                                participant_dataset_loader_table,
+                                                                malicious_participant_dataset_loader_table)
             if participant in entropy.keys():
                 current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=model,
                                                        device=device, evaluate=False)
