@@ -26,15 +26,16 @@ def l2norm(x,y):
 
 
 class feature_extractor(nn.Module):
-            def __init__(self,model,classifier_index=-1):
-                super(feature_extractor, self).__init__()
-                self.features = nn.Sequential(
-                    # stop at conv4
-                    *list(model.children())[:classifier_index]
-                )
-            def forward(self, x):
-                x = self.features(x)
-                return x
+    def __init__(self,model,classifier_index=-1):
+        super(feature_extractor, self).__init__()
+        self.features = nn.Sequential(
+            # stop at conv4
+            *list(model.children())[:classifier_index]
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        return x
 
 
 class classifier(nn.Module):

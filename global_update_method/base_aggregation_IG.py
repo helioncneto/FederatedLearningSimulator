@@ -9,20 +9,6 @@ from torch.utils.data import DataLoader, TensorDataset
 from utils.helper import save, shuffle, do_evaluation, add_malicious_participants
 
 
-def gen_train_fake(samples: int = 10000, features: int = 77, interval: Tuple[int, int] = (0, 1),
-                   classes: tuple = (0, 1)) -> TensorDataset:
-    train_np_x = np.array(
-        [[np.random.uniform(interval[0], interval[1]) for _ in range(features)] for _ in range(samples)])
-    train_np_y = np.array([shuffle(np.array(classes)) for _ in range(samples)])
-
-    train_tensor_x = torch.Tensor(train_np_x)
-    train_tensor_y = torch.Tensor(train_np_y)
-
-    trainset = TensorDataset(train_tensor_x, train_tensor_y)
-    # dataloader = DataLoader(trainset, batch_size=batch, shuffle=False)
-    return trainset
-
-
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
@@ -31,12 +17,12 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         wandb.watch(model)
     model.train()
 
-    dataset = get_dataset(args, trainset, args.mode)
+    dataset = get_dataset(args, trainset, args.num_of_clients, args.mode)
     print("Preparing participants evaluation datasets")
     participant_dataset_loader_table = {}
     for participant in range(args.num_of_clients):
         participant_dataset_ldr = DataLoader(DatasetSplit(trainset, dataset[participant]),
-                                                batch_size=args.batch_size, shuffle=True)
+                                             batch_size=args.batch_size, shuffle=True)
         participant_dataset_loader_table[participant] = participant_dataset_ldr
 
     directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced_fake'
