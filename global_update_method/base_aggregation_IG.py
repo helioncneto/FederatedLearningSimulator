@@ -20,12 +20,12 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
     dataset = get_dataset(args, trainset, args.num_of_clients, args.mode)
     print("Preparing participants evaluation datasets")
-    participant_dataset_loader_table = {}
-    malicious_participant_dataset_loader_table = {}
+    participant_dataloader_table = {}
+    malicious_participant_dataloader_table = {}
     for participant in range(args.num_of_clients):
         participant_dataset_ldr = DataLoader(DatasetSplit(trainset, dataset[participant]),
                                              batch_size=args.batch_size, shuffle=True)
-        participant_dataset_loader_table[participant] = participant_dataset_ldr
+        participant_dataloader_table[participant] = participant_dataset_ldr
 
     directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced_fake'
     filepath = directory + '/' + args.mode + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
@@ -62,9 +62,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     if args.malicious_rate > 0:
         trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
         for participant in dataset_fake.keys():
-            malicious_participant_dataset_ldr = DataLoader(DatasetSplit(trainset_fake, dataset_fake[participant]),
-                                                           batch_size=args.batch_size, shuffle=True)
-            malicious_participant_dataset_loader_table[participant] = malicious_participant_dataset_ldr
+            malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(trainset_fake,
+                                                                                          dataset_fake[participant]),
+                                                                             batch_size=args.batch_size, shuffle=True)
     else:
         trainset_fake, dataset_fake = {}, {}
 
@@ -113,20 +113,17 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             return
         print('Training participants')
         #models_val_loss = {}
-
-        for participant in selected_participants:
-            _, _, current_trainset = get_participant(args, participant, dataset, dataset_fake,
-                                               num_of_data_clients, trainset, trainset_fake)
-            get_participant_loader(participant, current_trainset, participant_dataset_loader_table,
-                           malicious_participant_dataset_loader_table)
+        malicious_list = []
 
         for participant in selected_participants:
             #if participant < args.num_of_clients:
-            num_of_data_clients, idxs, current_trainset = get_participant(args, participant, dataset, dataset_fake,
-                                                                          num_of_data_clients, trainset, trainset_fake)
+            num_of_data_clients, idxs, current_trainset, malicious = get_participant(args, participant, dataset,
+                                                                                     dataset_fake, num_of_data_clients,
+                                                                                     trainset, trainset_fake)
             local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
                                          batch_size=args.batch_size, dataset=current_trainset, idxs=idxs,
                                          alpha=this_alpha)
+            malicious_list.append(malicious)
 
             weight, loss = local_setting.train(net=copy.deepcopy(model).to(device))
             local_weight.append(copy.deepcopy(weight))
@@ -174,9 +171,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         model.eval()
 
         for participant in selected_participants:
-            participant_dataset_loader = get_participant_loader(participant, current_trainset,
-                                                                participant_dataset_loader_table,
-                                                                malicious_participant_dataset_loader_table)
+            participant_dataset_loader = get_participant_loader(participant, malicious_list,
+                                                                participant_dataloader_table,
+                                                                malicious_participant_dataloader_table)
             if participant in entropy.keys():
                 current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=model,
                                                        device=device, evaluate=False)
