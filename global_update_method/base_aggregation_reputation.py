@@ -4,7 +4,8 @@ from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
-from utils.helper import save, do_evaluation
+from utils.helper import save, do_evaluation, add_malicious_participants, get_participant
+from torch.utils.data import DataLoader, TensorDataset
 
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
@@ -18,6 +19,11 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         wandb.watch(model)
     model.train()
 
+    directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced_fake'
+    filepath = directory + '/' + args.mode + (
+        str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
+        args.num_of_clients) + '.txt'
+
     loss_func = nn.CrossEntropyLoss()
     dataset = get_dataset(args, trainset, args.num_of_clients, args.mode)
     loss_train = []
@@ -30,6 +36,17 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     global_model_rep = {}
     global_metrics = []
 
+    # Gen fake data
+    malicious_participant_dataloader_table = {}
+    if args.malicious_rate > 0:
+        trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
+        for participant in dataset_fake.keys():
+            malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(trainset_fake,
+                                                                                          dataset_fake[participant]),
+                                                                             batch_size=args.batch_size, shuffle=True)
+    else:
+        trainset_fake, dataset_fake = {}, {}
+
     for epoch in range(args.global_epochs):
         print('starting a new epoch')
         wandb_dict = {}
@@ -38,6 +55,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         local_loss = []
         local_delta = []
         global_weight = copy.deepcopy(model.state_dict())
+        malicious_list = {}
 
         # Sample participating agents for this global round
 
@@ -45,10 +63,19 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
         print('Training participants')
         for participant in all_participants:
-            num_of_data_clients.append(len(dataset[participant]))
+            '''num_of_data_clients.append(len(dataset[participant]))
             local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
                                          batch_size=args.batch_size, dataset=trainset, idxs=dataset[participant],
+                                         alpha=this_alpha)'''
+
+            num_of_data_clients, idxs, current_trainset, malicious = get_participant(args, participant, dataset,
+                                                                                     dataset_fake, num_of_data_clients,
+                                                                                     trainset, trainset_fake)
+            local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
+                                         batch_size=args.batch_size, dataset=current_trainset, idxs=idxs,
                                          alpha=this_alpha)
+            malicious_list[participant] = malicious
+
             weight, loss = local_setting.train(net=copy.deepcopy(model).to(device))
             local_weight.append(copy.deepcopy(weight))
             local_loss.append(copy.deepcopy(loss))

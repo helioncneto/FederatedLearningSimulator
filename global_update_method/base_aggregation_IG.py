@@ -21,7 +21,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     dataset = get_dataset(args, trainset, args.num_of_clients, args.mode)
     print("Preparing participants evaluation datasets")
     participant_dataloader_table = {}
-    malicious_participant_dataloader_table = {}
     for participant in range(args.num_of_clients):
         participant_dataset_ldr = DataLoader(DatasetSplit(trainset, dataset[participant]),
                                              batch_size=args.batch_size, shuffle=True)
@@ -59,6 +58,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     blocked = {}
 
     # Gen fake data
+    malicious_participant_dataloader_table = {}
     if args.malicious_rate > 0:
         trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
         for participant in dataset_fake.keys():

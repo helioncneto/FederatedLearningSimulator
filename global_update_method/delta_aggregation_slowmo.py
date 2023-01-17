@@ -19,6 +19,7 @@ from utils import log_ConfusionMatrix_Umap, log_acc
 from utils import calculate_delta_cv,calculate_delta_variance, calculate_divergence_from_optimal,calculate_divergence_from_center
 from utils import CenterUpdate
 from utils import *
+from utils.helper import add_malicious_participants, get_participant
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
@@ -46,6 +47,24 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     for key in global_momentum.keys():
         global_momentum[key] = torch.zeros_like(global_momentum[key])
 
+    directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced_fake'
+    filepath = directory + '/' + args.mode + (
+        str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
+        args.num_of_clients) + '.txt'
+
+    # Gen fake data
+    malicious_participant_dataloader_table = {}
+    if args.malicious_rate > 0:
+        trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
+        for participant in dataset_fake.keys():
+            malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(trainset_fake,
+                                                                                          dataset_fake[
+                                                                                              participant]),
+                                                                             batch_size=args.batch_size,
+                                                                             shuffle=True)
+    else:
+        trainset_fake, dataset_fake = {}, {}
+
     for epoch in range(args.global_epochs):
         wandb_dict = {}
         num_of_data_clients = []
@@ -58,11 +77,16 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         if (epoch == 0) or (args.participation_rate < 1):
             selected_user = np.random.choice(range(args.num_of_clients), m, replace=False)
         print(f'Aggregation Round: {epoch}')
+        malicious_list = {}
 
         for user in selected_user:
-            num_of_data_clients.append(len(dataset[user]))
+            num_of_data_clients, idxs, current_trainset, malicious = get_participant(args, user, dataset,
+                                                                                     dataset_fake, num_of_data_clients,
+                                                                                     trainset, trainset_fake)
             local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                         batch_size=args.batch_size, dataset=trainset, idxs=dataset[user], alpha=this_alpha)
+                                         batch_size=args.batch_size, dataset=current_trainset, idxs=idxs,
+                                         alpha=this_alpha)
+            malicious_list[user] = malicious
             weight, loss = local_setting.train(net=copy.deepcopy(model).to(device), delta=global_delta)
             local_K.append(local_setting.K)
             local_weight.append(copy.deepcopy(weight))

@@ -6,7 +6,8 @@ import numpy as np
 
 from libs.evaluation.metrics import Evaluator
 from utils import *
-from utils.helper import save, do_evaluation
+from utils.helper import save, do_evaluation, add_malicious_participants, get_participant
+from torch.utils.data import DataLoader, TensorDataset
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
@@ -28,6 +29,25 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     m = max(int(args.participation_rate * args.num_of_clients), 1)
     for key in global_delta.keys():
         global_delta[key] = torch.zeros_like(global_delta[key])
+
+    directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced_fake'
+    filepath = directory + '/' + args.mode + (
+        str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
+        args.num_of_clients) + '.txt'
+
+    # Gen fake data
+    malicious_participant_dataloader_table = {}
+    if args.malicious_rate > 0:
+        trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
+        for participant in dataset_fake.keys():
+            malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(trainset_fake,
+                                                                                          dataset_fake[
+                                                                                              participant]),
+                                                                             batch_size=args.batch_size,
+                                                                             shuffle=True)
+    else:
+        trainset_fake, dataset_fake = {}, {}
+
     for epoch in range(args.global_epochs):
         wandb_dict = {}
         num_of_data_clients = []
@@ -50,11 +70,17 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
         sending_model = copy.deepcopy(model)
         sending_model.load_state_dict(sending_model_dict)
+        malicious_list = {}
 
         for user in selected_user:
-            num_of_data_clients.append(len(dataset[user]))
+            num_of_data_clients, idxs, current_trainset, malicious = get_participant(args, user, dataset,
+                                                                                     dataset_fake, num_of_data_clients,
+                                                                                     trainset, trainset_fake)
             local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                         batch_size=args.batch_size, dataset=trainset, idxs=dataset[user], alpha=this_alpha)
+                                         batch_size=args.batch_size, dataset=current_trainset, idxs=idxs,
+                                         alpha=this_alpha)
+            malicious_list[user] = malicious
+
             weight, loss = local_setting.train(copy.deepcopy(sending_model).to(device), epoch)
             local_K.append(local_setting.K)
             local_weight.append(copy.deepcopy(weight))
