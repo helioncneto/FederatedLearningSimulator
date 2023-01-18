@@ -230,7 +230,7 @@ def get_filepath(args, is_malicious=False):
         directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced_fake'
         filepath = directory + '/' + args.mode + (
             str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
-            args.num_of_clients) + '_' + args.malicious_rate + 'malicious' + '.txt'
+            args.num_of_clients) + '_' + str(args.malicious_rate) + 'malicious' + '.txt'
     else:
         directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced'
         filepath = directory + '/' + args.mode + (
