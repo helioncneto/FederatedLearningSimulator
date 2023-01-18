@@ -31,15 +31,8 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     this_lr = args.lr
     this_alpha = args.alpha
 
-    #total_participants = args.num_of_clients + selected_participants_fake_num
     total_participants = args.num_of_clients
     selected_participants_num = max(int(args.participation_rate * total_participants), 1)
-    dataset_fake = {}
-    trainset_fake = None
-    #selected_participants = None
-    # selected_participants_fake = np.random.choice(range(5),
-                                                  #selected_participants_fake_num,
-                                                  #replace=False)
     loss_func = nn.CrossEntropyLoss()
     ig = {}
     entropy = {}
