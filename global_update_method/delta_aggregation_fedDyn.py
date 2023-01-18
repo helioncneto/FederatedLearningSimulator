@@ -17,6 +17,7 @@ from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from utils import calculate_delta_cv,calculate_delta_variance, calculate_divergence_from_optimal,calculate_divergence_from_center
 from utils import CenterUpdate
 from utils import *
+from utils.helper import get_filepath, add_malicious_participants, get_participant
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
@@ -48,6 +49,20 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
     m = max(int(args.participation_rate * args.num_of_clients), 1)
 
+    # Gen fake data
+    malicious_participant_dataloader_table = {}
+    if args.malicious_rate > 0:
+        directory, filepath = get_filepath(args, True)
+        trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
+        for participant in dataset_fake.keys():
+            malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(trainset_fake,
+                                                                                          dataset_fake[
+                                                                                              participant]),
+                                                                             batch_size=args.batch_size,
+                                                                             shuffle=True)
+    else:
+        trainset_fake, dataset_fake = {}, {}
+
     for epoch in range(args.global_epochs):
         wandb_dict = {}
         num_of_data_clients = []
@@ -63,11 +78,15 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
         print(f'Aggregation Round: {epoch}')
 
+        malicious_list = {}
         for user in selected_user:
-            num_of_data_clients.append(len(dataset[user]))
+            num_of_data_clients, idxs, current_trainset, malicious = get_participant(args, user, dataset,
+                                                                                     dataset_fake, num_of_data_clients,
+                                                                                     trainset, trainset_fake, epoch)
             local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                         batch_size=args.batch_size, dataset=trainset, idxs=dataset[user],
-                                         alpha=this_alpha, local_deltas=local_deltas)
+                                         batch_size=args.batch_size, dataset=current_trainset, idxs=idxs,
+                                         alpha=this_alpha)
+            malicious_list[user] = malicious
             weight, loss = local_setting.train(net=copy.deepcopy(model).to(device), user=user)
             local_K.append(local_setting.K)
 

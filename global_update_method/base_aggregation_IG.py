@@ -26,7 +26,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                                              batch_size=args.batch_size, shuffle=True)
         participant_dataloader_table[participant] = participant_dataset_ldr
 
-    directory, filepath = get_filepath(args, True)
     loss_train = []
     acc_train = []
     this_lr = args.lr
@@ -55,6 +54,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     # Gen fake data
     malicious_participant_dataloader_table = {}
     if args.malicious_rate > 0:
+        directory, filepath = get_filepath(args, True)
         trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
         for participant in dataset_fake.keys():
             malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(trainset_fake,

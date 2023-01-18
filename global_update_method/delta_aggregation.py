@@ -25,7 +25,7 @@ from utils import *
 
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-from utils.helper import add_malicious_participants, get_participant
+from utils.helper import add_malicious_participants, get_participant, get_filepath
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update):
@@ -45,14 +45,10 @@ def GlobalUpdate(args, device, trainset, testloader, local_update):
     for key in global_delta.keys():
         global_delta[key] = torch.zeros_like(global_delta[key])
 
-    directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced_fake'
-    filepath = directory + '/' + args.mode + (
-        str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
-        args.num_of_clients) + '.txt'
-
     # Gen fake data
     malicious_participant_dataloader_table = {}
     if args.malicious_rate > 0:
+        directory, filepath = get_filepath(args, True)
         trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
         for participant in dataset_fake.keys():
             malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(trainset_fake,

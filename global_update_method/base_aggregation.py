@@ -21,7 +21,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         wandb.watch(model)
     model.train()
 
-    directory, filepath = get_filepath(args, True)
+
     dataset = get_dataset(args, trainset, args.num_of_clients, args.mode)
     loss_train = []
     acc_train = []
@@ -33,6 +33,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     # Gen fake data
     malicious_participant_dataloader_table = {}
     if args.malicious_rate > 0:
+        directory, filepath = get_filepath(args, True)
         trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
         for participant in dataset_fake.keys():
             malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(trainset_fake,

@@ -8,7 +8,7 @@ import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from torch.utils.data import DataLoader, TensorDataset
-from utils.helper import save, shuffle, do_evaluation, add_malicious_participants, get_participant
+from utils.helper import save, shuffle, do_evaluation, add_malicious_participants, get_participant, get_filepath
 from libs.methods.Oort import create_training_selector
 from libs.config.config import load_yaml_conf
 
@@ -36,10 +36,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     model.train()
 
     dataset = get_dataset(args, trainset, args.num_of_clients, args.mode)
-    directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced_fake'
-    filepath = directory + '/' + args.mode + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
-        args.num_of_clients) + '.txt'
-
     oort_args = load_yaml_conf("libs/config/oort_config.yaml")
     selector = create_training_selector(oort_args)
     #initial_score = {'reward': 0, 'duration':0}
@@ -69,6 +65,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
     # Gen fake data
     malicious_participant_dataloader_table = {}
     if args.malicious_rate > 0:
+        directory, filepath = get_filepath(args, True)
         trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
         for participant in dataset_fake.keys():
             malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(trainset_fake,
