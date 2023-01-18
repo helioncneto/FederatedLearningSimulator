@@ -7,7 +7,7 @@ from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from torch.utils.data import DataLoader, TensorDataset
 from utils.helper import save, shuffle, do_evaluation, add_malicious_participants, get_participant, \
-    get_participant_loader
+    get_participant_loader, get_filepath
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
@@ -26,12 +26,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                                              batch_size=args.batch_size, shuffle=True)
         participant_dataloader_table[participant] = participant_dataset_ldr
 
-    directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced_fake'
-    filepath = directory + '/' + args.mode + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
-        args.num_of_clients) + '.txt'
-
-
-
+    directory, filepath = get_filepath(args, True)
     loss_train = []
     acc_train = []
     this_lr = args.lr

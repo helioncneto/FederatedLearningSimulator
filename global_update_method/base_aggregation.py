@@ -6,7 +6,8 @@ import os
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from libs.evaluation.metrics import Evaluator
-from utils.helper import save, do_evaluation, add_malicious_participants, get_participant
+from utils.helper import save, do_evaluation, add_malicious_participants, get_participant, get_filepath
+from torch.utils.data import DataLoader, TensorDataset
 
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
@@ -20,11 +21,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         wandb.watch(model)
     model.train()
 
-    directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced_fake'
-    filepath = directory + '/' + args.mode + (
-        str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
-        args.num_of_clients) + '.txt'
-
+    directory, filepath = get_filepath(args, True)
     dataset = get_dataset(args, trainset, args.num_of_clients, args.mode)
     loss_train = []
     acc_train = []
