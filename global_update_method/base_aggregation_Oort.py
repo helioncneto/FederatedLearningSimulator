@@ -114,7 +114,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             start_time = time.time()
             num_of_data_clients, idxs, current_trainset, malicious = get_participant(args, participant, dataset,
                                                                                      dataset_fake, num_of_data_clients,
-                                                                                     trainset, trainset_fake)
+                                                                                     trainset, trainset_fake, epoch)
             local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
                                          batch_size=args.batch_size, dataset=current_trainset, idxs=idxs,
                                          alpha=this_alpha)

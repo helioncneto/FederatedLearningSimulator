@@ -236,17 +236,19 @@ def add_malicious_participants(args, directory: str, filepath: str) -> Tuple[Ten
     return trainset_fake, dataset_fake
 
 
-def get_participant(args, participant, dataset, dataset_fake, num_of_data_clients, trainset, trainset_fake):
-    malicious = participant in dataset_fake.keys()
-    if participant is not malicious:
-        num_of_data_clients.append(len(dataset[participant]))
-        idxs = dataset[participant]
-        current_trainset = trainset
-    else:
+def get_participant(args, participant, dataset, dataset_fake, num_of_data_clients, trainset, trainset_fake,
+                    aggregation):
+    malicious = participant in dataset_fake.keys() and np.random.random() <= args.malicious_proba and \
+                aggregation >= args.malicious_aggregation
+    if participant is malicious:
         print(f"Training malicious participant {participant}.")
         num_of_data_clients.append(len(dataset_fake[participant]))
         idxs = dataset_fake[participant]
         current_trainset = trainset_fake
+        return num_of_data_clients, idxs, current_trainset, malicious
+    num_of_data_clients.append(len(dataset[participant]))
+    idxs = dataset[participant]
+    current_trainset = trainset
     return num_of_data_clients, idxs, current_trainset, malicious
 
 

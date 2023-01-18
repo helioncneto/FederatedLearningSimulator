@@ -102,6 +102,12 @@ def parse_arguments():
         "--malicious_rate", default=0, type=float, help="Malicious participants rate. 0 for no malicious participants."
     )
     parser.add_argument(
+        "--malicious_proba", default=1, type=float, help="Probability of being malicious."
+    )
+    parser.add_argument(
+        "--malicious_aggregation", default=0, type=int, help="Which aggregation round the participant starts the malicious behavior."
+    )
+    parser.add_argument(
         "--num_fake_data", default=1500000, type=int, help="Number of fake samples."
     )
     parser.add_argument(
