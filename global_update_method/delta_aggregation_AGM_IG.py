@@ -23,6 +23,10 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
     participant_dataloader_table = {}
     dataset = get_dataset(args, trainset, args.num_of_clients, args.mode)
+    for participant in range(args.num_of_clients):
+        participant_dataset_ldr = DataLoader(DatasetSplit(trainset, dataset[participant]),
+                                             batch_size=args.batch_size, shuffle=True)
+        participant_dataloader_table[participant] = participant_dataset_ldr
     loss_train = []
     acc_train = []
     this_lr = args.lr
@@ -160,6 +164,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         prev_model = copy.deepcopy(model)
         prev_model.load_state_dict(global_weight)
         global_losses = []
+        model.eval()
 
         for participant in selected_participants:
             participant_dataset_loader = get_participant_loader(participant, malicious_list,
