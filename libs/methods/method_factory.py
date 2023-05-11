@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from global_update_method import base_aggregation, delta_aggregation_slowmo, adam_aggregation, delta_aggregation, \
     delta_aggregation_fedDyn, delta_aggregation_AGM, base_aggregation_fedSA, delta_aggregation_AGM_fedSA, \
     base_aggregation_IG, base_aggregation_fedSA_IG, delta_aggregation_AGM_fedSA_IG, base_aggregation_reputation, \
-    base_aggregation_Oort
+    base_aggregation_Oort, delta_aggregation_AGM_IG
 
 from local_update_method import base, weight_l2, fedCM, fedDyn, fedAGM
 
@@ -114,6 +114,13 @@ class GlobalBaseAggregationOortFactory(IGlobalMethodFactory):
         return base_aggregation_Oort.GlobalUpdate
 
 
+class GlobalDeltaAggregationFedAGMIGFactory(IGlobalMethodFactory):
+    """Method for returning the Delta global with IG aggregation method"""
+
+    def get_global_method(self):
+        return delta_aggregation_AGM_IG.GlobalUpdate
+
+
 class LocalBaseFactory(ILocalMethodFactory):
     """Method for returning the FedAVG local update method"""
 
@@ -163,6 +170,7 @@ GLOBALAGGREGATION_LOOKUP_TABLE = {'fedavg': GlobalBaseAggregationFactory(),
                                   'global_delta': GlobalDeltaAggregationFactory(),
                                   'feddyn': GlobalDeltaAggregationFedDynFactory(),
                                   'fedagm':  GlobalDeltaAggregationFedAGMFactory(),
+                                  'fedagm_ig':  GlobalDeltaAggregationFedAGMIGFactory(),
                                   'fedsa':  GlobalBaseAggregationFedSAFactory(),
                                   'fedsa_agm': GlobalDeltaAggregationFedSAFactory(),
                                   "fedavg_ig": GlobalBaseAggregationIGFactory(),
