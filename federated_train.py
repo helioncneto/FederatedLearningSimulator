@@ -55,9 +55,9 @@ def main():
 
     #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
-        device = torch.device(args.cuda_device)
+        device = args.cuda_device
     else:
-        device = torch.device("cpu")
+        device = "cpu"
 
     print(device)
 
