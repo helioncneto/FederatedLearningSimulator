@@ -1,4 +1,4 @@
-from args_dir.federated import run_args
+from args_dir.federated_args import run_args
 import libs.dataset.dataset_factory as dataset_loader
 from libs.methods.method_factory import LOCALUPDATE_LOOKUP_TABLE, GLOBALAGGREGATION_LOOKUP_TABLE
 
