@@ -14,7 +14,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 def init_env(args):
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_device)
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_device_id)
 
     experiment_name = args.set + "_" + args.global_method  + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else "") + "_" + \
                       args.method + ("_" + args.additional_experiment_name if args.additional_experiment_name != ''
@@ -53,13 +53,14 @@ def main():
     args = run_args()
     init_env(args)
 
-    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    if torch.cuda.is_available():
-        device = torch.device(args.cuda_device)
+    if args.train_on_gpu:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     else:
         device = torch.device("cpu")
 
-    print(device)
+    print(f'Training on: {device}')
+    if args.train_on_gpu:
+        print(f'Cuda device ID: {args.cuda_device_id}')
 
     # Build Dataset
     dataset_factory = None

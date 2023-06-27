@@ -111,16 +111,16 @@ def parse_arguments():
         "--num_fake_data", default=1500000, type=int, help="Number of fake samples."
     )
     parser.add_argument(
-        "--cuda_visible_device",
+        "--cuda_device_id",
         default=0,
         type=float,
         metavar="N",
         help="which GPU to use",
     )
     parser.add_argument(
-        "--cuda_device",
-        default="cuda:0",
-        type=str,
+        "--train_on_gpu",
+        default=True,
+        type=bool,
         help="Name of cuda device if available (default: cuda:0)",
     )
 
