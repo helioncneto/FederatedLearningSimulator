@@ -220,9 +220,9 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         print('Final Specificity of the network on the 10000 test images: %f %%' % test_metric['specificity'])
         print('Final F1-score of the network on the 10000 test images: %f %%' % test_metric['f1score'])
 
-        save((args.eval_path, args.mode + "_test_acc"), test_metric['accuracy'])
-        save((args.eval_path, args.mode + "_test_prec"), test_metric['precision'])
-        save((args.eval_path, args.mode + "_test_sens"), test_metric['sensitivity'])
-        save((args.eval_path, args.mode + "_test_spec"), test_metric['specificity'])
-        save((args.eval_path, args.mode + "_test_f1"), test_metric['f1score'])
+        save((args.eval_path, args.global_method + "_test_acc"), test_metric['accuracy'])
+        save((args.eval_path, args.global_method + "_test_prec"), test_metric['precision'])
+        save((args.eval_path, args.global_method + "_test_sens"), test_metric['sensitivity'])
+        save((args.eval_path, args.global_method + "_test_spec"), test_metric['specificity'])
+        save((args.eval_path, args.global_method + "_test_f1"), test_metric['f1score'])
 
