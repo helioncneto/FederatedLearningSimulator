@@ -60,7 +60,7 @@ def main():
 
     print(f'Training on: {device}')
     if args.train_on_gpu:
-        print(f'Cuda device ID: {int(args.cuda_device_id)}')
+        print(f'Cuda Device ID: {int(args.cuda_device_id)}')
 
     # Build Dataset
     dataset_factory = None
@@ -95,5 +95,4 @@ def main():
 
 
 if __name__ == '__main__':
-    #from args_dir.federated import args
     main()
