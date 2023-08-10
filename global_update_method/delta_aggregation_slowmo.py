@@ -19,7 +19,8 @@ from utils import log_ConfusionMatrix_Umap, log_acc
 from utils import calculate_delta_cv,calculate_delta_variance, calculate_divergence_from_optimal,calculate_divergence_from_center
 from utils import CenterUpdate
 from utils import *
-from utils.helper import add_malicious_participants, get_participant, get_filepath
+from utils.helper import get_participant, get_filepath
+from utils.malicious import add_malicious_participants
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):

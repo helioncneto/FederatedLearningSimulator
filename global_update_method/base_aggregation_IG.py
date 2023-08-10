@@ -6,8 +6,95 @@ import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from torch.utils.data import DataLoader, TensorDataset
-from utils.helper import save, shuffle, do_evaluation, add_malicious_participants, get_participant, \
-    get_participant_loader, get_filepath
+from utils.helper import save, shuffle, do_evaluation, get_participant, get_participant_loader, get_filepath
+
+from utils.malicious import add_malicious_participants
+from global_update_method.base_aggregation import BaseGlobalUpdate
+
+
+class FedSBSGlobalUpdate(BaseGlobalUpdate):
+    def __init__(self, args, device, trainset, testloader, local_update, valloader=None):
+        super().__init__(args, device, trainset, testloader, local_update, valloader)
+
+        self.global_losses = []
+
+    def _restart_env(self):
+        super()._restart_env()
+        self.global_losses = []
+        self.total_participants = self.args.num_of_clients
+        self.ig = {}
+        self.entropy = {}
+        self.participants_score = {idx: self.selected_participants_num / self.total_participants for idx in range(self.total_participants)}
+        self.not_selected_participants = list(self.participants_score.keys())
+        self.ep_greedy = 1
+        self.ep_greedy_decay = pow(0.01, 1 / self.args.global_epochs)
+        self.participants_count = {participant: 0 for participant in list(self.participants_score.keys())}
+        #self.blocked = {}
+        self.eg_momentum = 0.9
+        self.participant_dataloader_table = {}
+        for participant in range(self.args.num_of_clients):
+            participant_dataset_ldr = DataLoader(DatasetSplit(self.trainset, self.dataset[participant]),
+                                                 batch_size=self.args.batch_size, shuffle=True)
+            self.participant_dataloader_table[participant] = participant_dataset_ldr
+        self.malicious_participant_dataloader_table = {}
+
+    def _select_participants(self):
+        '''if len(self.blocked) > 0:
+            parts_to_ublock = []
+            for part, since in self.blocked.items():
+                if since + int(self.total_participants / self.selected_participants_num) <= self.epoch:
+                    parts_to_ublock.append(part)
+                    self.participants_count[part] = 0
+
+            [self.blocked.pop(part) for part in parts_to_ublock]'''
+
+        if self.epoch == 1 or self.args.participation_rate >= 1:
+            print('Selecting the participants')
+            self.selected_participants = np.random.choice(range(self.args.num_of_clients),
+                                                          self.selected_participants_num,
+                                                          replace=False)
+            self.not_selected_participants = list(set(self.not_selected_participants) - set(self.selected_participants))
+        elif self.args.participation_rate < 1:
+            self.selected_participants, self.not_selected_participants = selection_ig(self.selected_participants_num,
+                                                                                      self.ep_greedy,
+                                                                                      self.not_selected_participants,
+                                                                                      self.participants_score,
+                                                                                      self.args.temperature,
+                                                                                      participants_count=self.participants_count)
+        print(' Participants IDS: ', self.selected_participants)
+
+    def _update_global_model(self):
+        super()._update_global_model()
+        self.global_losses = []
+        self.model.eval()
+
+        for participant in self.selected_participants:
+            participant_dataset_loader = get_participant_loader(participant, self.malicious_list,
+                                                                self.participant_dataloader_table,
+                                                                self.malicious_participant_dataloader_table)
+            if participant in self.entropy.keys():
+                current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=self.model,
+                                                       device=self.device, evaluate=False)
+            else:
+                current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=self.model,
+                                                       device=self.device, evaluate=False, calc_entropy=True)
+                self.entropy[participant] = current_global_metrics['entropy']
+            self.global_losses.append(current_global_metrics['loss'])
+            print(f'=> Participant {participant} loss: {current_global_metrics["loss"]}')
+
+        self.global_loss = sum(self.global_losses) / len(self.global_losses)
+        print(f'=> Mean global loss: {self.global_loss}')
+
+    def _model_validation(self):
+        super()._model_validation()
+        cur_ig = calc_ig(self.global_loss, self.local_loss, self.entropy)
+        self.participants_score, self.ig = update_participants_score(self.participants_score, cur_ig, self.ig,
+                                                                     self.eg_momentum)
+        print(f'Information Gain: {self.ig}')
+
+    def _decay(self):
+        super()._decay()
+        self.ep_greedy *= self.ep_greedy_decay
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):

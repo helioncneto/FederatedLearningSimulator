@@ -58,7 +58,7 @@ def main():
     else:
         device = torch.device("cpu")
 
-    print(f'Training on: {device}')
+    print(f'Training on {"GPU" if torch.cuda.is_available() else "CPU"}')
     if args.train_on_gpu:
         print(f'Cuda Device ID: {int(args.cuda_device_id)}')
 
@@ -84,14 +84,21 @@ def main():
             print('The chosen method is not valid.')
             print(f'Valid methods: {list(LOCALUPDATE_LOOKUP_TABLE.keys())}')
         try:
-            global_method =args.global_method.casefold()
-            global_update = GLOBALAGGREGATION_LOOKUP_TABLE[global_method].get_global_method()
+            global_method = args.global_method.casefold()
+            global_update = GLOBALAGGREGATION_LOOKUP_TABLE[global_method].get_global_method(args=args,
+                                                                                            device=device,
+                                                                                            trainset=trainset,
+                                                                                            testloader=testloader,
+                                                                                            valloader=valloader,
+                                                                                            local_update=local_update)
+            #              local_update=local_update)
         except KeyError:
             print('The chosen global method is not valid.')
             print(f'Valid global methods: {list(GLOBALAGGREGATION_LOOKUP_TABLE.keys())}')
         if global_update is not None and local_update is not None:
-            global_update(args=args, device=device, trainset=trainset, testloader=testloader, valloader=valloader,
-                          local_update=local_update)
+            #global_update(args=args, device=device, trainset=trainset, testloader=testloader, valloader=valloader,
+            #              local_update=local_update)
+            global_update.train()
 
 
 if __name__ == '__main__':

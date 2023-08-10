@@ -7,9 +7,10 @@ import numpy as np
 from libs.evaluation.metrics import Evaluator
 from libs.methods.ig import selection_ig, calc_ig, update_participants_score
 from utils import *
-from utils.helper import save, do_evaluation, add_malicious_participants, get_participant, get_filepath, \
+from utils.helper import save, do_evaluation, get_participant, get_filepath, \
     get_participant_loader
 from torch.utils.data import DataLoader, TensorDataset
+from utils.malicious import add_malicious_participants
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):

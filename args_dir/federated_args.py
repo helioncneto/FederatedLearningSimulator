@@ -110,6 +110,23 @@ def parse_arguments():
     parser.add_argument(
         "--num_fake_data", default=1500000, type=int, help="Number of fake samples."
     )
+
+    parser.add_argument(
+        "--malicious_type",
+        default="random",
+        type=str,
+        metavar="N",
+        help="Name of types of malicious participants",
+    )
+
+    parser.add_argument(
+        "--mal_epsilon",
+        default=0.4,
+        type=float,
+        metavar="N",
+        help="The epsilon for FGSM attack",
+    )
+
     parser.add_argument(
         "--cuda_device_id",
         default=0,
@@ -189,6 +206,7 @@ def parse_arguments():
         metavar="N",
         help="number of epochs for image gradient ascent",
     )
+
     parser.add_argument(
         "--num_of_clients",
         default=100,
@@ -714,7 +732,7 @@ def get_config(args):
     for v in override_args:
         loaded_yaml[v] = getattr(args, v)
 
-    print(f"=> Reading YAML config from {args.config}")
+    print(f"=> Reading YAML config from: {args.config}")
     args.__dict__.update(loaded_yaml)
 
 

@@ -25,7 +25,8 @@ from utils import *
 
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-from utils.helper import add_malicious_participants, get_participant, get_filepath
+from utils.helper import get_participant, get_filepath
+from utils.malicious import add_malicious_participants
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update):

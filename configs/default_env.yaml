@@ -9,6 +9,7 @@ alpha: 1
 mu: 0.001
 gamma: 0.9
 momentum: 0.0
+num_of_clients: 10
 tau: 1.0
 lr: 0.1
 mode: dirichlet

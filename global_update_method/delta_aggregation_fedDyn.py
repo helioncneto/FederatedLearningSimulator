@@ -17,7 +17,8 @@ from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from utils import calculate_delta_cv,calculate_delta_variance, calculate_divergence_from_optimal,calculate_divergence_from_center
 from utils import CenterUpdate
 from utils import *
-from utils.helper import get_filepath, add_malicious_participants, get_participant
+from utils.helper import get_filepath, get_participant
+from utils.malicious import add_malicious_participants
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):

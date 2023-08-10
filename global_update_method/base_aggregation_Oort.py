@@ -8,7 +8,8 @@ import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from torch.utils.data import DataLoader, TensorDataset
-from utils.helper import save, shuffle, do_evaluation, add_malicious_participants, get_participant, get_filepath
+from utils.helper import save, shuffle, do_evaluation, get_participant, get_filepath
+from utils.malicious import add_malicious_participants
 from libs.methods.Oort import create_training_selector
 from libs.config.config import load_yaml_conf
 
