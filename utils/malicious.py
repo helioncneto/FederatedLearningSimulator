@@ -55,7 +55,6 @@ def add_malicious_participants(args, directory: str, filepath: str) -> Tuple[Ten
     dataset_fake = get_dataset(args, trainset_fake, num_of_clients=participants_fake_num, mode=args.mode, compatible=False,
                                directory=directory, filepath=filepath)
     dataset_fake = reorder_dictionary(dataset_fake, list(range(args.num_of_clients)))
-    print(dataset_fake.keys())
     return trainset_fake, dataset_fake
 
 

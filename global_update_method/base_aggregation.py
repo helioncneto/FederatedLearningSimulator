@@ -77,6 +77,8 @@ class BaseGlobalUpdate:
             directory, filepath = get_filepath(self.args, True)
             if self.args.malicious_type == 'random':
                 self.trainset_fake, self.dataset_fake = add_malicious_participants(self.args, directory, filepath)
+                for participant in self.dataset_fake.keys():
+                    self.malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(self.trainset_fake, self.dataset_fake[participant]), batch_size=self.args.batch_size, shuffle=True)
             elif self.args.malicious_type == 'fgsm':
                 print("   => The malicious participants are using FGSM attack")
                 mal_num = int(self.args.num_of_clients * self.args.malicious_rate)
@@ -88,12 +90,12 @@ class BaseGlobalUpdate:
             else:
                 print("The malicious participant type is not defined!")
                 sys.exit()
-            print("Malicious participants IDS: ", self.dataset_fake.keys())
-            for participant in self.dataset_fake.keys():
+            print("Malicious participants IDS: ", list(self.dataset_fake.keys()))
+            '''for participant in self.dataset_fake.keys():
                 if self.args.malicious_type == 'random':
                     self.malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(self.trainset_fake,
                                                                                                        self.dataset_fake[participant]),
-                                                                                                       batch_size=self.args.batch_size, shuffle=True)
+                                                                                                       batch_size=self.args.batch_size, shuffle=True)'''
 
         elif self.args.malicious_rate > 1:
             print("The malicious rate cannot be greater than 1")

@@ -17,26 +17,27 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
         super().__init__(args, device, trainset, testloader, local_update, valloader)
 
         self.global_losses = []
-
-    def _restart_env(self):
-        super()._restart_env()
-        self.global_losses = []
         self.total_participants = self.args.num_of_clients
+        self.participant_dataloader_table = {}
         self.ig = {}
         self.entropy = {}
-        self.participants_score = {idx: self.selected_participants_num / self.total_participants for idx in range(self.total_participants)}
+        self.participants_score = {idx: self.selected_participants_num / self.total_participants for idx in
+                                   range(self.total_participants)}
         self.not_selected_participants = list(self.participants_score.keys())
         self.ep_greedy = 1
         self.ep_greedy_decay = pow(0.01, 1 / self.args.global_epochs)
         self.participants_count = {participant: 0 for participant in list(self.participants_score.keys())}
-        #self.blocked = {}
+        # self.blocked = {}
         self.eg_momentum = 0.9
-        self.participant_dataloader_table = {}
+
         for participant in range(self.args.num_of_clients):
             participant_dataset_ldr = DataLoader(DatasetSplit(self.trainset, self.dataset[participant]),
                                                  batch_size=self.args.batch_size, shuffle=True)
             self.participant_dataloader_table[participant] = participant_dataset_ldr
-        self.malicious_participant_dataloader_table = {}
+
+    def _restart_env(self):
+        super()._restart_env()
+        self.global_losses = []
 
     def _select_participants(self):
         '''if len(self.blocked) > 0:
@@ -65,7 +66,7 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
 
     def _update_global_model(self):
         super()._update_global_model()
-        self.global_losses = []
+        #self.global_losses = []
         self.model.eval()
 
         for participant in self.selected_participants:
