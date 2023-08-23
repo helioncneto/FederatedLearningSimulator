@@ -4,6 +4,7 @@ from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import numpy as np
 import os
 import sys
+import time
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from libs.evaluation.metrics import Evaluator
@@ -27,6 +28,7 @@ class BaseGlobalUpdate:
         self.epoch = 0
         self.loss_avg = 0
         self.total_num_of_data_clients = 1
+        self.duration = []
 
         assert os.path.isdir(self.args.eval_path)
 
@@ -70,6 +72,7 @@ class BaseGlobalUpdate:
         self.global_weight = copy.deepcopy(self.model.state_dict())
         self.metric = {}
         self.test_metric = {}
+        self.duration = []
 
     def _set_malicious(self):
         if 0 < self.args.malicious_rate <= 1:
@@ -122,6 +125,7 @@ class BaseGlobalUpdate:
         #for participant in tqdm(self.selected_participants, desc="Local update"):
         for participant in self.selected_participants:
             print(f"Training participant: {participant}")
+            self.start_time = time.time()
             self.num_of_data_clients, idxs, current_trainset, malicious = get_participant(self.args, participant,
                                                                                           self.dataset,
                                                                                           self.dataset_fake,
@@ -144,6 +148,8 @@ class BaseGlobalUpdate:
             for key in weight.keys():
                 delta[key] = weight[key] - self.global_weight[key]
             self.local_delta.append(delta)
+            self.end_time = time.time()
+            self.duration.append(self.end_time - self.start_time)
 
     def _global_aggregation(self):
         self.total_num_of_data_clients = sum(self.num_of_data_clients)

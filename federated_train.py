@@ -22,6 +22,10 @@ def init_env(args):
     group_name = args.mode + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else "")
     job_type = args.global_method + ("_" + args.additional_experiment_name if args.additional_experiment_name != '' else '')
     print("Running the experiment: ", experiment_name)
+    print("Global aggregation algorithm: ", args.global_method)
+    print("Local update method: ", args.method)
+    print(f"Number of selected participants: "
+          f"{int(abs(args.num_of_clients*args.participation_rate))}/{args.num_of_clients}")
 
     if args.use_wandb:
         wandb_log_dir = os.path.join('data1/fed/actreg/wandb', experiment_name)

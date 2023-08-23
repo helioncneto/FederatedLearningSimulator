@@ -115,8 +115,10 @@ class GlobalBaseAggregationReputationFactory(IGlobalMethodFactory):
 class GlobalBaseAggregationOortFactory(IGlobalMethodFactory):
     """Method for returning the Base global aggregation method with Oort baseline"""
 
-    def get_global_method(self):
-        return base_aggregation_Oort.GlobalUpdate
+    def get_global_method(self, args, device, trainset, testloader, valloader, local_update):
+        return base_aggregation_Oort.OortGlobalUpdate(args=args, device=device, trainset=trainset,
+                                                        testloader=testloader, valloader=valloader,
+                                                        local_update=local_update)
 
 
 class GlobalDeltaAggregationFedAGMIGFactory(IGlobalMethodFactory):
