@@ -32,15 +32,20 @@ class OortGlobalUpdate(BaseGlobalUpdate):
             self.selected_participants = np.random.choice(range(self.args.num_of_clients),
                                                           self.selected_participants_num, replace=False)
         else:
-            self.selected_participants = self.selector.select_participant(args.num_of_clients)[:self.selected_participants_num]
+            self.selected_participants = self.selector.select_participant(self.args.num_of_clients)[:self.selected_participants_num]
 
     def _model_validation(self):
         super()._model_validation()
         for idx, participant in enumerate(self.selected_participants):
+            '''print(self.local_loss)
+            print("IDX: ", idx)
+            print("Num data clients: ", self.num_of_data_clients[idx])
+            print("Local Loss: ", self.local_loss[idx])
+            print("Duration: ", self.duration[idx])'''
             self.selector.update_client_util(participant,
-                                        {'reward': self.num_of_data_clients[idx] * np.sqrt(self.local_loss[idx] ** 2),
+                                        {'reward': self.num_of_data_clients[idx] * np.sqrt(self.local_loss[participant] ** 2),
                                          'duration': self.duration[idx],
-                                         'time_stamp': self.epoch+1,
+                                         'time_stamp': self.epoch,
                                          'status': True})
         self.selector.nextRound()
 
