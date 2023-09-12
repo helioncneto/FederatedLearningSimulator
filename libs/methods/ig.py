@@ -16,7 +16,6 @@ def select_participant(selection_type: str, selection_helper: dict, greedy_index
 
 
 def selection_on_blocked(selected, participants_count, temperature, selection_helper, selection_type):
-    print(f'Participant {selected} is blocked')
     is_blocked = True
     sel = 0
     while is_blocked:
@@ -25,6 +24,7 @@ def selection_on_blocked(selected, participants_count, temperature, selection_he
         if rand < p:
             return selected
         else:
+            print(f'Participant {selected} is blocked')
             sel += 1
             selected = select_participant(selection_type, selection_helper, sel)
             is_blocked = selected in participants_count.keys()
