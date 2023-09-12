@@ -96,7 +96,10 @@ def parse_arguments():
         "--seed", default=0, type=int, help="seed for initializing training."
     )
     parser.add_argument(
-        "--temperature", default=20, type=int, help="Temperature for selection on blocked participants."
+        "--temperature", default=20.0, type=float, help="Temperature for selection on blocked participants."
+    )
+    parser.add_argument(
+        "--cool", default=0.97, type=float, help="Temperature reduction factor."
     )
     parser.add_argument(
         "--malicious_rate", default=0, type=float, help="Malicious participants rate. 0 for no malicious participants."

@@ -29,6 +29,8 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
         self.participants_count = {participant: 0 for participant in list(self.participants_score.keys())}
         # self.blocked = {}
         self.eg_momentum = 0.9
+        self.temperature = args.temperature
+        self.cool = args.cool
 
         for participant in range(self.args.num_of_clients):
             participant_dataset_ldr = DataLoader(DatasetSplit(self.trainset, self.dataset[participant]),
@@ -60,13 +62,14 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
                                                                                       self.ep_greedy,
                                                                                       self.not_selected_participants,
                                                                                       self.participants_score,
-                                                                                      self.args.temperature,
+                                                                                      self.temperature,
                                                                                       participants_count=self.participants_count)
         print(' Participants IDS: ', self.selected_participants)
 
     def _update_global_model(self):
         super()._update_global_model()
         #self.global_losses = []
+        #print("TEMPERATURA: " + str(self.temperature))
         self.model.eval()
 
         for participant in self.selected_participants:
@@ -96,6 +99,7 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
     def _decay(self):
         super()._decay()
         self.ep_greedy *= self.ep_greedy_decay
+        self.temperature *= self.cool
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
@@ -338,7 +342,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         print('Final Sensitivity of the network on the 10000 test images: %f %%' % test_metric['sensitivity'])
         print('Final Specificity of the network on the 10000 test images: %f %%' % test_metric['specificity'])
         print('Final F1-score of the network on the 10000 test images: %f %%' % test_metric['f1score'])
-
+        print("TEMPERATURA: " + str(self.temperature))
         save((args.eval_path, args.global_method + "_test_acc"), test_metric['accuracy'])
         save((args.eval_path, args.global_method + "_test_prec"), test_metric['precision'])
         save((args.eval_path, args.global_method + "_test_sens"), test_metric['sensitivity'])

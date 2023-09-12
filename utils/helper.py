@@ -122,6 +122,7 @@ def save(path_tuple: tuple, metric: float) -> None:
     file = open(path, 'a')
     if exists:
         file.write(',')
+    print("Saving: " + path)
     file.write(str(metric))
     file.close()
 
