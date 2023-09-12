@@ -88,6 +88,7 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
 
         self.global_loss = sum(self.global_losses) / len(self.global_losses)
         print(f'=> Mean global loss: {self.global_loss}')
+        print("TEMPERATURA: " + str(self.temperature))
 
     def _model_validation(self):
         super()._model_validation()
@@ -102,7 +103,7 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
         self.temperature *= self.cool
 
 
-def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
+'''def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
@@ -159,8 +160,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         eg_momentum = 0.9
 
         # Sample participating agents for this global round
-        '''selected_participants = []
-        selection_helper = copy.deepcopy(participants_score)'''
         selected_participants = None
 
         if len(blocked) > 0:
@@ -212,15 +211,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             local_model = copy.deepcopy(model).to(device)
             local_model.load_state_dict(weight)
             local_model.eval()
-
-            #batch_loss = torch.tensor([]).to(device)
-            #with torch.no_grad():
-            #    for x, labels in testloader:
-            #        x, labels = x.to(device), labels.to(device)
-            #        outputs = local_model(x)
-            #        local_val_loss = loss_func(outputs, labels)
-            #        batch_loss = torch.cat((batch_loss, local_val_loss.unsqueeze(0)), 0)
-            #    models_val_loss[participant] = (torch.sum(batch_loss) / batch_loss.size(0)).item()
 
             delta = {}
             for key in weight.keys():
@@ -278,19 +268,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
         participants_score, ig = update_participants_score(participants_score, cur_ig, ig, eg_momentum)
 
-        '''for client_id, client_ig in cur_ig.items():
-            if client_id not in ig.keys():
-                ig[client_id] = []
-                ig[client_id].append(client_ig)
-            else:
-                ig[client_id].append(client_ig)
-            if len(ig[client_id]) <= 1:
-                participants_score[client_id] = ig[client_id]
-            else:
-                delta_term = sum(ig[client_id][:-1]) / len(ig[client_id][:-1])
-                participants_score[client_id] = ((1 - eg_momentum) * delta_term) + (eg_momentum * ig[client_id][-1])'''
-            #participants_score[client_id] = sum(ig[client_id]) / len(ig[client_id])
-
         print(participants_score)
 
 
@@ -342,10 +319,11 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         print('Final Sensitivity of the network on the 10000 test images: %f %%' % test_metric['sensitivity'])
         print('Final Specificity of the network on the 10000 test images: %f %%' % test_metric['specificity'])
         print('Final F1-score of the network on the 10000 test images: %f %%' % test_metric['f1score'])
-        print("TEMPERATURA: " + str(self.temperature))
+        
         save((args.eval_path, args.global_method + "_test_acc"), test_metric['accuracy'])
         save((args.eval_path, args.global_method + "_test_prec"), test_metric['precision'])
         save((args.eval_path, args.global_method + "_test_sens"), test_metric['sensitivity'])
         save((args.eval_path, args.global_method + "_test_spec"), test_metric['specificity'])
         save((args.eval_path, args.global_method + "_test_f1"), test_metric['f1score'])
         save((args.eval_path, args.global_method + "_ig"), ig)
+'''
