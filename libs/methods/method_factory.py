@@ -124,8 +124,10 @@ class GlobalBaseAggregationOortFactory(IGlobalMethodFactory):
 class GlobalDeltaAggregationFedAGMIGFactory(IGlobalMethodFactory):
     """Method for returning the Delta global with IG aggregation method"""
 
-    def get_global_method(self):
-        return delta_aggregation_AGM_IG.GlobalUpdate
+    def get_global_method(self, args, device, trainset, testloader, valloader, local_update):
+        return delta_aggregation_AGM_IG.DeltaFedSBSGlobalUpdate(args=args, device=device, trainset=trainset,
+                                                        testloader=testloader, valloader=valloader,
+                                                        local_update=local_update)
 
 
 class LocalBaseFactory(ILocalMethodFactory):

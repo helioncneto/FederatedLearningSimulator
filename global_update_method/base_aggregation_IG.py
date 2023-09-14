@@ -21,8 +21,9 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
         self.participant_dataloader_table = {}
         self.ig = {}
         self.entropy = {}
-        self.participants_score = {idx: self.selected_participants_num / self.total_participants for idx in
-                                   range(self.total_participants)}
+        '''self.participants_score = {idx: self.selected_participants_num / self.total_participants for idx in
+                                   range(self.total_participants)}'''
+        self.participants_score = {idx: np.inf for idx in range(self.total_participants)}
         self.not_selected_participants = list(self.participants_score.keys())
         self.ep_greedy = 1
         self.ep_greedy_decay = pow(0.01, 1 / self.args.global_epochs)

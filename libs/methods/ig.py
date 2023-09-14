@@ -47,6 +47,7 @@ def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_
                  participants_score: dict, temperature: int, participants_count: dict = {}) -> tuple:
     selection_helper = copy.deepcopy(participants_score)
     selected_participants = []
+    print("Vezes Selecionados Geral: ", participants_count)
     for _ in range(selected_participants_num):
         p = random.random()
         if p < ep_greedy:

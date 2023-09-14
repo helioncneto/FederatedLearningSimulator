@@ -13,6 +13,78 @@ from torch.utils.data import DataLoader, TensorDataset
 from utils.malicious import add_malicious_participants
 
 
+class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
+    def __init__(self, args, device, trainset, testloader, local_update, valloader=None):
+        super().__init__(args, device, trainset, testloader, local_update, valloader)
+        self.this_tau = args.tau
+        self.global_delta = copy.deepcopy(model.state_dict())
+        self.m = max(int(args.participation_rate * args.num_of_clients), 1)
+        for key in self.global_delta.keys():
+            self.global_delta[key] = torch.zeros_like(self.global_delta[key])
+        self.local_K = []
+        self.sending_model = copy.deepcopy(self.model)
+
+    def _restart_env(self):
+        super()._restart_env()
+        self.local_K = []
+
+    def _select_participants(self):
+        super()._select_participants()
+        # AGM server model -> lookahead with global momentum
+        sending_model_dict = copy.deepcopy(self.model.state_dict())
+        for key in self.global_delta.keys():
+            sending_model_dict[key] += -1 * self.args.lamb * self.global_delta[key]
+
+        self.sending_model = copy.deepcopy(self.model)
+        self.sending_model.load_state_dict(sending_model_dict)
+
+    def _local_update(self):
+        for participant in self.selected_participants:
+            print(f"Training participant: {participant}")
+            self.num_of_data_clients, idxs, current_trainset, malicious = get_participant(self.args, participant,
+                                                                                     self.dataset,
+                                                                                     self.dataset_fake,
+                                                                                     self.num_of_data_clients,
+                                                                                     self.trainset,
+                                                                                     self.trainset_fake, self.epoch)
+            local_setting = self.local_update(args=self.args, lr=self.this_lr, local_epoch=self.args.local_epochs,
+                                              device=self.device, batch_size=self.args.batch_size,
+                                              dataset=current_trainset, idxs=idxs, alpha=self.this_alpha)
+            self.malicious_list[participant] = malicious
+
+            weight, loss = local_setting.train(copy.deepcopy(self.sending_model).to(self.device), self.epoch)
+            local_K.append(local_setting.K)
+            local_weight.append(copy.deepcopy(weight))
+            local_loss[participant] = copy.deepcopy(loss)
+
+            # Store local delta
+            delta = {}
+            for key in weight.keys():
+                delta[key] = this_tau*weight[key]+(1-this_tau)*sending_model_dict[key] - global_weight[key]
+            local_delta.append(delta)
+
+        total_num_of_data_clients=sum(num_of_data_clients)
+        FedAvg_weight = copy.deepcopy(local_weight[0])
+        for key in FedAvg_weight.keys():
+            for i in range(len(local_weight)):
+                if i==0:
+                    FedAvg_weight[key]*=num_of_data_clients[i]
+                else:
+                    FedAvg_weight[key] += local_weight[i][key]*num_of_data_clients[i]
+            FedAvg_weight[key] /= total_num_of_data_clients
+            FedAvg_weight[key] = FedAvg_weight[key]*this_tau +(1-this_tau)*sending_model_dict[key]
+        global_delta = copy.deepcopy(local_delta[0])
+
+        for key in global_delta.keys():
+            for i in range(len(local_delta)):
+                if i==0:
+                    global_delta[key] *= num_of_data_clients[i]
+                else:
+                    global_delta[key] += local_delta[i][key] * num_of_data_clients[i]
+            global_delta[key] = global_delta[key] / (-1 * total_num_of_data_clients)
+
+
+
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
@@ -114,6 +186,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         sending_model.load_state_dict(sending_model_dict)
         malicious_list = {}
 
+##############################################
         for participant in selected_participants:
             num_of_data_clients, idxs, current_trainset, malicious = get_participant(args, participant, dataset,
                                                                                      dataset_fake, num_of_data_clients,
@@ -153,6 +226,7 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                 else:
                     global_delta[key] += local_delta[i][key] * num_of_data_clients[i]
             global_delta[key] = global_delta[key] / (-1 * total_num_of_data_clients)
+    #######################################################################
 
         model.load_state_dict(FedAvg_weight)
         loss_avg = sum(local_loss) / len(local_loss)
