@@ -21,6 +21,9 @@ def selection_on_blocked(selected, participants_count, temperature, selection_he
     while is_blocked:
         p = math.exp(-participants_count[selected] / (temperature))
         rand = random.random()
+        print("Probabilidade do participante ser bloqueado: ", p)
+        print("Valor aleatório: ", rand)
+        print(f"O participante {'não foi' if rand < p else 'foi'} bloqueado")
         if rand < p:
             return selected
         else:
