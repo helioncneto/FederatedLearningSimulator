@@ -18,7 +18,7 @@ class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
     def __init__(self, args, device, trainset, testloader, local_update, valloader=None):
         super().__init__(args, device, trainset, testloader, local_update, valloader)
         self.this_tau = args.tau
-        self.global_delta = copy.deepcopy(model.state_dict())
+        self.global_delta = copy.deepcopy(self.model.state_dict())
         self.m = max(int(args.participation_rate * args.num_of_clients), 1)
         for key in self.global_delta.keys():
             self.global_delta[key] = torch.zeros_like(self.global_delta[key])
@@ -39,6 +39,10 @@ class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
 
         self.sending_model = copy.deepcopy(self.model)
         self.sending_model.load_state_dict(self.sending_model_dict)
+
+    def _decay(self):
+        super()._decay()
+        self.this_tau *= self.args.server_learning_rate_decay
 
     def _local_update(self):
         for participant in self.selected_participants:
