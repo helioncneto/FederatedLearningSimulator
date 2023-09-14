@@ -61,9 +61,6 @@ def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_
                     if selected in participants_count.keys():
                         selected = selection_on_blocked(selected, participants_count, temperature, selection_helper,
                                                         "random")
-                    #while participants_count[selected] >= 3:
-                    #    print(f'Participant {selected} is blocked')
-                    #    selected = np.random.choice(list(selection_helper.keys()))
             selection_helper.pop(selected)
             selected_participants.append(selected)
         else:
@@ -76,10 +73,6 @@ def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_
                 if selected in participants_count.keys():
                     selected = selection_on_blocked(selected, participants_count, temperature, selection_helper,
                                                     "greedy")
-            #while participants_count[selected] >= 3:
-            #    print(f'Participant {selected} is blocked')
-            #    sel += 1
-            #    selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[sel]
             if selected in not_selected_participants:
                 not_selected_participants.remove(selected)
             selection_helper.pop(selected)
