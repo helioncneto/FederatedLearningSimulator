@@ -24,6 +24,7 @@ class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
             self.global_delta[key] = torch.zeros_like(self.global_delta[key])
         self.local_K = []
         self.sending_model = copy.deepcopy(self.model)
+        self.sending_model_dict = copy.deepcopy(self.model.state_dict())
 
     def _restart_env(self):
         super()._restart_env()
@@ -32,12 +33,12 @@ class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
     def _select_participants(self):
         super()._select_participants()
         # AGM server model -> lookahead with global momentum
-        sending_model_dict = copy.deepcopy(self.model.state_dict())
+        self.sending_model_dict = copy.deepcopy(self.model.state_dict())
         for key in self.global_delta.keys():
-            sending_model_dict[key] += -1 * self.args.lamb * self.global_delta[key]
+            self.sending_model_dict[key] += -1 * self.args.lamb * self.global_delta[key]
 
         self.sending_model = copy.deepcopy(self.model)
-        self.sending_model.load_state_dict(sending_model_dict)
+        self.sending_model.load_state_dict(self.sending_model_dict)
 
     def _local_update(self):
         for participant in self.selected_participants:
@@ -54,35 +55,39 @@ class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
             self.malicious_list[participant] = malicious
 
             weight, loss = local_setting.train(copy.deepcopy(self.sending_model).to(self.device), self.epoch)
-            local_K.append(local_setting.K)
-            local_weight.append(copy.deepcopy(weight))
-            local_loss[participant] = copy.deepcopy(loss)
+            # Novos maliciosos
+            if self.args.malicious_type == 'fgsm':
+                self.malicious_participant_dataloader_table[participant] = local_setting.get_dataloader()
+            self.local_K.append(local_setting.K)
+            self.local_weight.append(copy.deepcopy(weight))
+            self.local_loss[participant] = copy.deepcopy(loss)
 
             # Store local delta
             delta = {}
             for key in weight.keys():
-                delta[key] = this_tau*weight[key]+(1-this_tau)*sending_model_dict[key] - global_weight[key]
-            local_delta.append(delta)
+                delta[key] = self.this_tau*weight[key]+(1-self.this_tau)*self.sending_model_dict[key] - self.global_weight[key]
+            self.local_delta.append(delta)
 
-        total_num_of_data_clients=sum(num_of_data_clients)
-        FedAvg_weight = copy.deepcopy(local_weight[0])
-        for key in FedAvg_weight.keys():
-            for i in range(len(local_weight)):
-                if i==0:
-                    FedAvg_weight[key]*=num_of_data_clients[i]
+    def _global_aggregation(self):
+        self.total_num_of_data_clients = sum(self.num_of_data_clients)
+        self.FedAvg_weight = copy.deepcopy(self.local_weight[0])
+        for key in self.self.FedAvg_weight.keys():
+            for i in range(len(self.local_weight)):
+                if i == 0:
+                    self.FedAvg_weight[key] *= self.num_of_data_clients[i]
                 else:
-                    FedAvg_weight[key] += local_weight[i][key]*num_of_data_clients[i]
-            FedAvg_weight[key] /= total_num_of_data_clients
-            FedAvg_weight[key] = FedAvg_weight[key]*this_tau +(1-this_tau)*sending_model_dict[key]
-        global_delta = copy.deepcopy(local_delta[0])
+                    self.FedAvg_weight[key] += self.local_weight[i][key] * self.num_of_data_clients[i]
+            self.FedAvg_weight[key] /= self.total_num_of_data_clients
+            self.FedAvg_weight[key] = self.FedAvg_weight[key] * self.this_tau + (1-self.this_tau) * self.sending_model_dict[key]
+        self.global_delta = copy.deepcopy(self.local_delta[0])
 
-        for key in global_delta.keys():
-            for i in range(len(local_delta)):
-                if i==0:
-                    global_delta[key] *= num_of_data_clients[i]
+        for key in self.global_delta.keys():
+            for i in range(len(self.local_delta)):
+                if i == 0:
+                    self.global_delta[key] *= self.num_of_data_clients[i]
                 else:
-                    global_delta[key] += local_delta[i][key] * num_of_data_clients[i]
-            global_delta[key] = global_delta[key] / (-1 * total_num_of_data_clients)
+                    self.global_delta[key] += self.local_delta[i][key] * self.num_of_data_clients[i]
+            self.global_delta[key] = self.global_delta[key] / (-1 * self.total_num_of_data_clients)
 
 
 
