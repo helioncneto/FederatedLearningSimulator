@@ -43,14 +43,6 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
         self.global_losses = []
 
     def _select_participants(self):
-        '''if len(self.blocked) > 0:
-            parts_to_ublock = []
-            for part, since in self.blocked.items():
-                if since + int(self.total_participants / self.selected_participants_num) <= self.epoch:
-                    parts_to_ublock.append(part)
-                    self.participants_count[part] = 0
-
-            [self.blocked.pop(part) for part in parts_to_ublock]'''
 
         if self.epoch == 1 or self.args.participation_rate >= 1:
             print('Selecting the participants')
@@ -66,6 +58,7 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
                                                                                       self.participants_score,
                                                                                       self.temperature,
                                                                                       participants_count=self.participants_count)
+            self.participants_count = update_selection_count(self.selected_participants, self.participants_count)
         print(' Participants IDS: ', self.selected_participants)
 
     def _update_global_model(self):
