@@ -58,6 +58,7 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
                                                           replace=False)
             self.not_selected_participants = list(set(self.not_selected_participants) - set(self.selected_participants))
         elif self.args.participation_rate < 1:
+            print('PARTICIPANT SCORE: ', self.participants_score)
             self.selected_participants, self.not_selected_participants = selection_ig(self.selected_participants_num,
                                                                                       self.ep_greedy,
                                                                                       self.not_selected_participants,

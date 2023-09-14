@@ -12,16 +12,21 @@ def select_participant(selection_type: str, selection_helper: dict, greedy_index
     if selection_type == "random":
         return np.random.choice(list(selection_helper.keys()))
     elif selection_type == "greedy":
-        return sorted(selection_helper, key=selection_helper.get, reverse=True)[greedy_index]
+        try:
+            selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[greedy_index]
+        except KeyError:
+            selected = np.random.choice(list(selection_helper.keys()))
+        return selected
 
 
 def selection_on_blocked(selected, participants_count, temperature, selection_helper, selection_type):
     is_blocked = True
     sel = 0
     while is_blocked:
+        print("Vezes que o participante foi selecionado: ", participants_count[selected])
         p = math.exp(-participants_count[selected] / (temperature))
         rand = random.random()
-        print("Probabilidade do participante ser bloqueado: ", p)
+        print("Probabilidade do participante ser selecionado: ", p)
         print("Valor aleatório: ", rand)
         print(f"O participante {'não foi' if rand < p else 'foi'} bloqueado")
         if rand < p:
@@ -29,8 +34,12 @@ def selection_on_blocked(selected, participants_count, temperature, selection_he
         else:
             print(f'Participant {selected} is blocked')
             sel += 1
-            selected = select_participant(selection_type, selection_helper, sel)
-            is_blocked = selected in participants_count.keys()
+            if sel <= len(selection_helper):
+                selected = select_participant(selection_type, selection_helper, sel)
+                is_blocked = selected in participants_count.keys()
+            else:
+                selected = select_participant("random", selection_helper, sel)
+                is_blocked = False
     return selected
 
 
