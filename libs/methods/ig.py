@@ -86,6 +86,7 @@ def update_selection_count(selected_participants, participants_count):
         participants_count[participant] += 1
     return participants_count
 
+
 def update_participants_score(participants_score: dict, cur_ig: dict, ig: dict,
                               eg_momentum: float = 0.9) -> Tuple[dict, dict]:
     for client_id, client_ig in cur_ig.items():
