@@ -30,6 +30,7 @@ class GlobalBaseAggregationFactory(IGlobalMethodFactory):
         return base_aggregation.BaseGlobalUpdate(args=args, device=device, trainset=trainset, testloader=testloader,
                                                  valloader=valloader, local_update=local_update)
 
+
 class GlobalBaseAggregationIGFactory(IGlobalMethodFactory):
     """Method for returning the FedAVG using IG for selection"""
 

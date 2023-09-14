@@ -192,7 +192,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         sending_model.load_state_dict(sending_model_dict)
         malicious_list = {}
 
-##############################################
         for participant in selected_participants:
             num_of_data_clients, idxs, current_trainset, malicious = get_participant(args, participant, dataset,
                                                                                      dataset_fake, num_of_data_clients,

@@ -1,6 +1,6 @@
 # coding: utf-8
 from typing import Tuple
-from libs.methods.ig import selection_ig, update_participants_score, calc_ig
+from libs.methods.ig import selection_ig, update_participants_score, calc_ig, update_selection_count
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import numpy as np
 from utils import *
@@ -50,6 +50,7 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
                                                           self.selected_participants_num,
                                                           replace=False)
             self.not_selected_participants = list(set(self.not_selected_participants) - set(self.selected_participants))
+            self.participants_count = update_selection_count(self.selected_participants, self.participants_count)
         elif self.args.participation_rate < 1:
             print('PARTICIPANT SCORE: ', self.participants_score)
             self.selected_participants, self.not_selected_participants = selection_ig(self.selected_participants_num,
