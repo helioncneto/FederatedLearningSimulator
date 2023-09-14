@@ -11,6 +11,7 @@ from utils.helper import save, do_evaluation, get_participant, get_filepath, \
     get_participant_loader
 from torch.utils.data import DataLoader, TensorDataset
 from utils.malicious import add_malicious_participants
+from global_update_method.base_aggregation_IG import FedSBSGlobalUpdate
 
 
 class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
