@@ -75,7 +75,7 @@ class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
     def _global_aggregation(self):
         self.total_num_of_data_clients = sum(self.num_of_data_clients)
         self.FedAvg_weight = copy.deepcopy(self.local_weight[0])
-        for key in self.self.FedAvg_weight.keys():
+        for key in self.FedAvg_weight.keys():
             for i in range(len(self.local_weight)):
                 if i == 0:
                     self.FedAvg_weight[key] *= self.num_of_data_clients[i]

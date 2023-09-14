@@ -14,7 +14,7 @@ def select_participant(selection_type: str, selection_helper: dict, greedy_index
     elif selection_type == "greedy":
         try:
             selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[greedy_index]
-        except KeyError:
+        except IndexError:
             selected = np.random.choice(list(selection_helper.keys()))
         return selected
 
@@ -34,7 +34,7 @@ def selection_on_blocked(selected, participants_count, temperature, selection_he
         else:
             print(f'Participant {selected} is blocked')
             sel += 1
-            if sel <= len(selection_helper):
+            if sel < len(selection_helper):
                 selected = select_participant(selection_type, selection_helper, sel)
                 is_blocked = selected in participants_count.keys()
             else:
