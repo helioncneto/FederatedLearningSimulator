@@ -4,6 +4,7 @@ __pycache__/*
 /*/__pycache__/*
 
 data/*
+checkpoint/*
 log
 data1
 client_data/*
