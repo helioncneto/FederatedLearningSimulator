@@ -13,8 +13,8 @@ from global_update_method.base_aggregation import BaseGlobalUpdate
 
 
 class FedAGMGlobalUpdate(BaseGlobalUpdate):
-    def __init__(self, args, device, trainset, testloader, local_update, valloader=None):
-        super().__init__(args, device, trainset, testloader, local_update, valloader)
+    def __init__(self, args, device, trainset, testloader, local_update, experiment_name, valloader=None):
+        super().__init__(args, device, trainset, testloader, local_update, experiment_name, valloader)
         self.this_tau = self.args.tau
         self.global_delta = copy.deepcopy(self.model.state_dict())
         for key in self.global_delta.keys():

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from utils import get_scheduler, get_optimizer, get_model, get_dataset
+from utils import get_scheduler, get_optimizer, get_model, get_dataset, create_check_point, load_check_point
 import numpy as np
 import os
 import sys
@@ -18,7 +18,7 @@ from tqdm import tqdm
 
 
 class BaseGlobalUpdate:
-    def __init__(self, args, device, trainset, testloader, local_update, valloader=None):
+    def __init__(self, args, device, trainset, testloader, local_update, experiment_name, valloader=None):
         self.args = args
         self.device = device
         self.trainset = trainset
@@ -29,6 +29,7 @@ class BaseGlobalUpdate:
         self.loss_avg = 0
         self.total_num_of_data_clients = 1
         self.duration = []
+        self.experiment_name = experiment_name
 
         assert os.path.isdir(self.args.eval_path)
 
@@ -217,8 +218,28 @@ class BaseGlobalUpdate:
             save((self.args.eval_path, self.args.mode + "_test_spec"), self.test_metric['specificity'])
             save((self.args.eval_path, self.args.mode + "_test_f1"), self.test_metric['f1score'])
 
+    def _saving_point(self):
+        create_check_point(self.experiment_name, self.model, self.epoch+1, self.loss_train, self.malicious_list,
+                           self.this_lr, self.this_alpha, self.duration)
+
+    def _loading_point(self, checkpoint: dict):
+        self.model.load_state_dict(checkpoint['model'])
+        self.epoch = checkpoint['epoch']
+        self.loss_train = checkpoint['loss']
+        self.malicious_list = checkpoint['malicious']
+        self.this_lr = checkpoint['lr']
+        self.this_alpha = checkpoint['this_alpha']
+        self.duration = checkpoint['duration']
+
     def train(self):
-        for epoch in range(1, self.args.global_epochs + 1):
+        if self.args.use_checkpoint and os.path.isfile('checkpoint/' + self.experiment_name + '.pt'):
+            print("=> Restarting training from the last checkpoint...")
+            checkpoint = load_check_point(self.experiment_name)
+            init_epoch = checkpoint['epoch']
+            self._loading_point(checkpoint)
+        else:
+            init_epoch = 1
+        for epoch in range(init_epoch, self.args.global_epochs + 1):
             self.epoch = epoch
 
             # Restart the environment for the next aggregation round
@@ -246,5 +267,8 @@ class BaseGlobalUpdate:
 
             print('Decay LR')
             self._decay()
+
+            print('Saving the checkpoint')
+            self._saving_point()
 
         self._model_test()

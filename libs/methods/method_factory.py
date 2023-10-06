@@ -11,7 +11,7 @@ class IGlobalMethodFactory(ABC):
     """Abstract class for global method classes"""
 
     @abstractmethod
-    def get_global_method(self, args, device, trainset, testloader, valloader, local_update):
+    def get_global_method(self, args, device, trainset, testloader, valloader, local_update, experiment_name):
         """Return the global method class"""
 
 
@@ -26,17 +26,19 @@ class ILocalMethodFactory(ABC):
 class GlobalBaseAggregationFactory(IGlobalMethodFactory):
     """Method for returning the FedAVG global aggregation method"""
 
-    def get_global_method(self, args, device, trainset, testloader, valloader, local_update):
+    def get_global_method(self, args, device, trainset, testloader, valloader, local_update, experiment_name):
         return base_aggregation.BaseGlobalUpdate(args=args, device=device, trainset=trainset, testloader=testloader,
-                                                 valloader=valloader, local_update=local_update)
+                                                 valloader=valloader, local_update=local_update,
+                                                 experiment_name=experiment_name)
 
 
 class GlobalBaseAggregationIGFactory(IGlobalMethodFactory):
     """Method for returning the FedAVG using IG for selection"""
 
-    def get_global_method(self,  args, device, trainset, testloader, valloader, local_update):
+    def get_global_method(self,  args, device, trainset, testloader, valloader, local_update, experiment_name):
         return base_aggregation_IG.FedSBSGlobalUpdate(args=args, device=device, trainset=trainset, testloader=testloader,
-                                                 valloader=valloader, local_update=local_update)
+                                                      valloader=valloader, local_update=local_update,
+                                                      experiment_name=experiment_name)
 
 
 class GlobalDeltaAggregationSlowmoFactory(IGlobalMethodFactory):
@@ -70,10 +72,10 @@ class GlobalDeltaAggregationFedDynFactory(IGlobalMethodFactory):
 class GlobalDeltaAggregationFedAGMFactory(IGlobalMethodFactory):
     """Method for returning the FedAGM global aggregation method"""
 
-    def get_global_method(self, args, device, trainset, testloader, valloader, local_update):
+    def get_global_method(self, args, device, trainset, testloader, valloader, local_update, experiment_name):
         return delta_aggregation_AGM.FedAGMGlobalUpdate(args=args, device=device, trainset=trainset,
                                                         testloader=testloader, valloader=valloader,
-                                                        local_update=local_update)
+                                                        local_update=local_update, experiment_name=experiment_name)
 
 
 class GlobalBaseAggregationFedSAFactory(IGlobalMethodFactory):
@@ -107,28 +109,28 @@ class GlobalDeltaAggregationFedSAIGFactory(IGlobalMethodFactory):
 class GlobalBaseAggregationReputationFactory(IGlobalMethodFactory):
     """Method for returning the Delta FedSA global aggregation method"""
 
-    def get_global_method(self, args, device, trainset, testloader, valloader, local_update):
+    def get_global_method(self, args, device, trainset, testloader, valloader, local_update, experiment_name):
         return base_aggregation_reputation.ReputationGlobalUpdate(args=args, device=device, trainset=trainset,
                                                         testloader=testloader, valloader=valloader,
-                                                        local_update=local_update)
+                                                        local_update=local_update, experiment_name=experiment_name)
 
 
 class GlobalBaseAggregationOortFactory(IGlobalMethodFactory):
     """Method for returning the Base global aggregation method with Oort baseline"""
 
-    def get_global_method(self, args, device, trainset, testloader, valloader, local_update):
+    def get_global_method(self, args, device, trainset, testloader, valloader, local_update, experiment_name):
         return base_aggregation_Oort.OortGlobalUpdate(args=args, device=device, trainset=trainset,
                                                         testloader=testloader, valloader=valloader,
-                                                        local_update=local_update)
+                                                        local_update=local_update, experiment_name=experiment_name)
 
 
 class GlobalDeltaAggregationFedAGMIGFactory(IGlobalMethodFactory):
     """Method for returning the Delta global with IG aggregation method"""
 
-    def get_global_method(self, args, device, trainset, testloader, valloader, local_update):
+    def get_global_method(self, args, device, trainset, testloader, valloader, local_update, experiment_name):
         return delta_aggregation_AGM_IG.DeltaFedSBSGlobalUpdate(args=args, device=device, trainset=trainset,
                                                         testloader=testloader, valloader=valloader,
-                                                        local_update=local_update)
+                                                        local_update=local_update, experiment_name=experiment_name)
 
 
 class LocalBaseFactory(ILocalMethodFactory):

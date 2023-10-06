@@ -164,6 +164,11 @@ def parse_arguments():
         help="Chose if you will sync with Weights and Bias",
     )
     parser.add_argument(
+        "--use_checkpoint",
+        action="store_true",
+        help="Active if you want to use a checkpoint",
+    )
+    parser.add_argument(
         "--config", help="Config file to use (see configs dir)", default=None
     )
     parser.add_argument(

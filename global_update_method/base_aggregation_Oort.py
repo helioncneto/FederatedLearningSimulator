@@ -16,8 +16,8 @@ from global_update_method.base_aggregation import BaseGlobalUpdate
 
 
 class OortGlobalUpdate(BaseGlobalUpdate):
-    def __init__(self, args, device, trainset, testloader, local_update, valloader=None):
-        super().__init__(args, device, trainset, testloader, local_update, valloader)
+    def __init__(self, args, device, trainset, testloader, local_update, experiment_name, valloader=None):
+        super().__init__(args, device, trainset, testloader, local_update, experiment_name, valloader)
         self.oort_args = load_yaml_conf("libs/config/oort_config.yaml")
         self.selector = create_training_selector(self.oort_args)
         # initial_score = {'reward': 0, 'duration':0}
@@ -49,8 +49,16 @@ class OortGlobalUpdate(BaseGlobalUpdate):
                                          'status': True})
         self.selector.nextRound()
 
+    def _saving_point(self):
+        create_check_point(self.experiment_name, self.model, self.epoch + 1, self.loss_train, self.malicious_list,
+                           self.this_lr, self.this_alpha, self.duration, selector=self.selector)
 
-def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
+    def _loading_point(self, checkpoint: dict):
+        super()._loading_point(checkpoint)
+        self.selector.load_state_dict(checkpoint['oort'])
+
+
+'''def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
@@ -108,8 +116,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         global_weight = copy.deepcopy(model.state_dict())
 
         # Sample participating agents for this global round
-        '''selected_participants = []
-        selection_helper = copy.deepcopy(participants_score)'''
         selected_participants = None
         if epoch == 0 or args.participation_rate >= 1:
             print('Selecting the participants')
@@ -183,18 +189,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                                          'time_stamp': epoch+1,
                                          'status': True})
         selector.nextRound()
-
-        '''for client_id, client_ig in cur_ig.items():
-            if client_id not in ig.keys():
-                ig[client_id] = []
-                ig[client_id].append(client_ig)
-            else:
-                ig[client_id].append(client_ig)
-            if len(ig[client_id]) <= 1:
-                participants_score[client_id] = ig[client_id]
-            else:
-                delta_term = sum(ig[client_id][:-1]) / len(ig[client_id][:-1])
-                participants_score[client_id] = ((1 - eg_momentum) * delta_term) + (eg_momentum * ig[client_id][-1])'''
             #participants_score[client_id] = sum(ig[client_id]) / len(ig[client_id])
 
 
@@ -249,3 +243,4 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         save((args.eval_path, args.global_method + "_test_spec"), test_metric['specificity'])
         save((args.eval_path, args.global_method + "_test_f1"), test_metric['f1score'])
 
+'''

@@ -15,8 +15,8 @@ from global_update_method.base_aggregation_IG import FedSBSGlobalUpdate
 
 
 class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
-    def __init__(self, args, device, trainset, testloader, local_update, valloader=None):
-        super().__init__(args, device, trainset, testloader, local_update, valloader)
+    def __init__(self, args, device, trainset, testloader, local_update, experiment_name, valloader=None):
+        super().__init__(args, device, trainset, testloader, local_update, experiment_name, valloader)
         self.this_tau = args.tau
         self.global_delta = copy.deepcopy(self.model.state_dict())
         self.m = max(int(args.participation_rate * args.num_of_clients), 1)
@@ -25,6 +25,10 @@ class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
         self.local_K = []
         self.sending_model = copy.deepcopy(self.model)
         self.sending_model_dict = copy.deepcopy(self.model.state_dict())
+
+    def _get_delta_args(self):
+        return {'this_tau': self.this_tau, 'global_delta': self.global_delta,
+                'sending_model_dict': self.sending_model_dict}
 
     def _restart_env(self):
         super()._restart_env()
@@ -93,9 +97,20 @@ class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
                     self.global_delta[key] += self.local_delta[i][key] * self.num_of_data_clients[i]
             self.global_delta[key] = self.global_delta[key] / (-1 * self.total_num_of_data_clients)
 
+    def _saving_point(self):
+        create_check_point(self.experiment_name, self.model, self.epoch + 1, self.loss_train, self.malicious_list,
+                           self.this_lr, self.this_alpha, self.duration, fedsbs=self._get_fedsbs_args(),
+                           delta=self._get_delta_args())
+
+    def _loading_point(self, checkpoint: dict):
+        super()._loading_point(checkpoint)
+        self.this_tau = checkpoint['delta']['this_tau']
+        self.global_delta = checkpoint['delta']['global_delta']
+        self.sending_model_dict = checkpoint['delta']['sending_model_dict']
+        self.sending_model.load_state_dict(self.sending_model_dict)
 
 
-def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
+'''def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
@@ -331,4 +346,4 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         save((args.eval_path, args.global_method + "_test_sens"), test_metric['sensitivity'])
         save((args.eval_path, args.global_method + "_test_spec"), test_metric['specificity'])
         save((args.eval_path, args.global_method + "_test_f1"), test_metric['f1score'])
-        save((args.eval_path, args.mode + "_ig"), ig)
+        save((args.eval_path, args.mode + "_ig"), ig)'''

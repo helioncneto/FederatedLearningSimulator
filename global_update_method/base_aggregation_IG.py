@@ -13,8 +13,8 @@ from global_update_method.base_aggregation import BaseGlobalUpdate
 
 
 class FedSBSGlobalUpdate(BaseGlobalUpdate):
-    def __init__(self, args, device, trainset, testloader, local_update, valloader=None):
-        super().__init__(args, device, trainset, testloader, local_update, valloader)
+    def __init__(self, args, device, trainset, testloader, local_update, experiment_name, valloader=None):
+        super().__init__(args, device, trainset, testloader, local_update, experiment_name, valloader)
 
         self.global_losses = []
         self.total_participants = self.args.num_of_clients
@@ -37,6 +37,11 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
             participant_dataset_ldr = DataLoader(DatasetSplit(self.trainset, self.dataset[participant]),
                                                  batch_size=self.args.batch_size, shuffle=True)
             self.participant_dataloader_table[participant] = participant_dataset_ldr
+
+    def _get_fedsbs_args(self):
+        return {'ig': self.ig, 'entropy': self.entropy, 'participants_score': self.participants_score,
+                'not_selected_participants': self.not_selected_participants, 'ep_greedy': self.ep_greedy,
+                'participants_count': self.participants_count, 'temperature': self.temperature}
 
     def _restart_env(self):
         super()._restart_env()
@@ -84,7 +89,7 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
 
         self.global_loss = sum(self.global_losses) / len(self.global_losses)
         print(f'=> Mean global loss: {self.global_loss}')
-        print("TEMPERATURA: " + str(self.temperature))
+        print("TEMPERATURE: " + str(self.temperature))
 
     def _model_validation(self):
         super()._model_validation()
@@ -97,6 +102,20 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
         super()._decay()
         self.ep_greedy *= self.ep_greedy_decay
         self.temperature *= self.cool
+
+    def _saving_point(self):
+        create_check_point(self.experiment_name, self.model, self.epoch + 1, self.loss_train, self.malicious_list,
+                           self.this_lr, self.this_alpha, self.duration, fedsbs=self._get_fedsbs_args())
+
+    def _loading_point(self, checkpoint: dict):
+        super()._loading_point(checkpoint)
+        self.ig = checkpoint['fesbs']['ig']
+        self.entropy = checkpoint['fesbs']['entropy']
+        self.participants_score = checkpoint['fesbs']['participants_score']
+        self.not_selected_participants = checkpoint['fesbs']['not_selected_participants']
+        self.ep_greedy = checkpoint['fesbs']['ep_greedy']
+        self.participants_count = checkpoint['fesbs']['participants_count']
+        self.temperature = checkpoint['fesbs']['temperature']
 
 
 '''def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):

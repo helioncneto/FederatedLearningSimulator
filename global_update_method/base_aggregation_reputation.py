@@ -13,13 +13,16 @@ from global_update_method.base_aggregation import BaseGlobalUpdate
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 class ReputationGlobalUpdate(BaseGlobalUpdate):
-    def __init__(self, args, device, trainset, testloader, local_update, valloader=None):
-        super().__init__(args, device, trainset, testloader, local_update, valloader)
+    def __init__(self, args, device, trainset, testloader, local_update, experiment_name, valloader=None):
+        super().__init__(args, device, trainset, testloader, local_update, experiment_name, valloader)
         self.all_participants = np.arange(args.num_of_clients)
         self.reputation = {}
         self.global_model_rep = {}
         self.global_metrics = []
         self.local_model = copy.deepcopy(self.model).to(self.device)
+
+    def _get_reputation_args(self):
+        return {'reputation': self.reputation, 'global_metrics': self.global_metrics}
 
     def _select_participants(self):
         self.selected_participants = {}
@@ -119,8 +122,17 @@ class ReputationGlobalUpdate(BaseGlobalUpdate):
         super()._model_validation()
         self.global_metrics.append(self.metrics['accuracy'])
 
+    def _saving_point(self):
+        create_check_point(self.experiment_name, self.model, self.epoch + 1, self.loss_train, self.malicious_list,
+                           self.this_lr, self.this_alpha, self.duration, reputation=self._get_reputation_args())
 
-def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
+    def _loading_point(self, checkpoint: dict):
+        super()._loading_point(checkpoint)
+        self.reputation = checkpoint['reputation']['reputation']
+        self.global_metrics = checkpoint['reputation']['global_metrics']
+
+
+'''def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
@@ -168,11 +180,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
         print('Training participants')
         for participant in all_participants:
-            '''num_of_data_clients.append(len(dataset[participant]))
-            local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                         batch_size=args.batch_size, dataset=trainset, idxs=dataset[participant],
-                                         alpha=this_alpha)'''
-
             num_of_data_clients, idxs, current_trainset, malicious = get_participant(args, participant, dataset,
                                                                                      dataset_fake, num_of_data_clients,
                                                                                      trainset, trainset_fake, epoch)
@@ -326,3 +333,4 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         save((args.eval_path, args.global_method + "_test_sens"), test_metric['sensitivity'])
         save((args.eval_path, args.global_method + "_test_spec"), test_metric['specificity'])
         save((args.eval_path, args.global_method + "_test_f1"), test_metric['f1score'])
+'''

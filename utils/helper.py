@@ -15,14 +15,14 @@ from libs.evaluation.metrics import Evaluator
 
 __all__ = ['l2norm', 'count_label_distribution', 'check_data_distribution', 'check_data_distribution_aug',
            'feature_extractor', 'classifier', 'get_model', 'get_optimizer', 'get_scheduler', 'save', 'shuffle',
-           'do_evaluation']
+           'do_evaluation', 'create_check_point', 'load_check_point']
 
 from utils import get_dataset
 from utils.data import FakeCICIDS2017Dataset
 
 
-def l2norm(x,y):
-    z= (((x-y)**2).sum())
+def l2norm(x, y):
+    z = (((x-y)**2).sum())
     return z/(1+len(x))
 
 
@@ -250,3 +250,25 @@ def get_scheduler(optimizer, args):
         print("Invalid mode")
         return
     return scheduler
+
+
+def create_check_point(experiment_name: str, model: object, epoch: int, loss_train: list, malicious_list,
+                       lr: float, this_alpha: float, duration: list = [], fedsbs: dict = {}, reputation: dict = {},
+                       delta: dict = {}, selector: object = None):
+    torch.save({
+        'model': model.state_dict(),
+        'epoch': epoch,
+        'loss': loss_train,
+        'malicious': malicious_list,
+        'lr': lr,
+        'this_alpha': this_alpha,
+        'duration': duration,
+        'fesbs': fedsbs,
+        'delta': delta,
+        'reputation': reputation,
+        'oort': selector.state_dict() if selector is not None else {}
+    }, 'checkpoint/' + experiment_name + '.pt')
+
+
+def load_check_point(experiment_name: str) -> dict:
+    return torch.load('checkpoint/' + experiment_name + '.pt')

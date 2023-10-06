@@ -49,13 +49,14 @@ def init_env(args):
     # Check if the data path exists. If not it will create
     if not os.path.exists(args.data):
         os.mkdir(args.data)
+    return experiment_name
 
 
 def main():
     """The main function of the federated learning simulator"""
     # initiate the simulator environment
     args = run_args()
-    init_env(args)
+    experiment_name = init_env(args)
 
     if args.train_on_gpu:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -94,7 +95,8 @@ def main():
                                                                                             trainset=trainset,
                                                                                             testloader=testloader,
                                                                                             valloader=valloader,
-                                                                                            local_update=local_update)
+                                                                                            local_update=local_update,
+                                                                                            experiment_name=experiment_name)
             #              local_update=local_update)
         except KeyError:
             print('The chosen global method is not valid.')

@@ -4,6 +4,7 @@ from typing import Tuple
 from utils.data import FakeCICIDS2017Dataset
 
 import torch.nn.functional as F
+import torchattacks
 import numpy as np
 import torch
 import copy
@@ -72,10 +73,10 @@ def get_fgsm_dataloader(ldr_train, model, batch_size, device, mal_epsilon):
             data.requires_grad = True
             output = model(data.unsqueeze(0))
             #pred = output.max(1, keepdim=True)[1]
-            '''if init_pred.item() != target.item():
-                malicious_data.append(data)
-                malicious_target.append(data)
-                continue'''
+            # if init_pred.item() != target.item():
+            #     malicious_data.append(data)
+            #     malicious_target.append(data)
+            #     continue
             loss = F.cross_entropy(output, target.unsqueeze(0))
             #Por pra cima dps
             model.zero_grad()
