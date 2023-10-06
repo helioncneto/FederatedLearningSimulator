@@ -36,16 +36,16 @@ class FedAGMGlobalUpdate(BaseGlobalUpdate):
         self.sending_model = copy.deepcopy(self.model)
         self.sending_model.load_state_dict(self.sending_model_dict)
 
-        total_num_of_data_clients = sum(self.num_of_data_clients)
-        FedAvg_weight = copy.deepcopy(self.local_weight[0])
-        for key in FedAvg_weight.keys():
+        self.total_num_of_data_clients = sum(self.num_of_data_clients)
+        self.FedAvg_weight = copy.deepcopy(self.local_weight[0])
+        for key in self.FedAvg_weight.keys():
             for i in range(len(self.local_weight)):
                 if i == 0:
-                    FedAvg_weight[key] *= self.num_of_data_clients[i]
+                    self.FedAvg_weight[key] *= self.num_of_data_clients[i]
                 else:
-                    FedAvg_weight[key] += self.local_weight[i][key] * self.num_of_data_clients[i]
-            FedAvg_weight[key] /= total_num_of_data_clients
-            FedAvg_weight[key] = FedAvg_weight[key] * self.this_tau + (1 - self.this_tau) * self.sending_model_dict[key]
+                    self.FedAvg_weight[key] += self.local_weight[i][key] * self.num_of_data_clients[i]
+            self.FedAvg_weight[key] /= total_num_of_data_clients
+            self.FedAvg_weight[key] = self.FedAvg_weight[key] * self.this_tau + (1 - self.this_tau) * self.sending_model_dict[key]
         self.global_delta = copy.deepcopy(self.local_delta[0])
 
         for key in self.global_delta.keys():

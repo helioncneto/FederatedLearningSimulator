@@ -255,6 +255,8 @@ def get_scheduler(optimizer, args):
 def create_check_point(experiment_name: str, model: object, epoch: int, loss_train: list, malicious_list,
                        lr: float, this_alpha: float, duration: list = [], fedsbs: dict = {}, reputation: dict = {},
                        delta: dict = {}, selector: object = None):
+
+    os.mkdir("checkpoint") if not os.path.isdir("checkpoint") else None
     torch.save({
         'model': model.state_dict(),
         'epoch': epoch,

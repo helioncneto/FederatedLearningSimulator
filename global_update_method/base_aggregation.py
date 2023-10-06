@@ -55,6 +55,7 @@ class BaseGlobalUpdate:
         self.local_weight = []
         self.local_loss = {}
         self.local_delta = []
+        self.local_K = []
         self.metric = {}
         self.test_metric = {}
 
@@ -74,6 +75,7 @@ class BaseGlobalUpdate:
         self.metric = {}
         self.test_metric = {}
         self.duration = []
+        self.local_K = []
 
     def _set_malicious(self):
         if 0 < self.args.malicious_rate <= 1:
@@ -141,6 +143,7 @@ class BaseGlobalUpdate:
             self.malicious_list[participant] = malicious
 
             weight, loss = local_setting.train(net=copy.deepcopy(self.model).to(self.device), malicious=malicious)
+            self.local_K.append(local_setting.K)
             if self.args.malicious_type == 'fgsm':
                 self.malicious_participant_dataloader_table[participant] = local_setting.get_dataloader()
             self.local_weight.append(copy.deepcopy(weight))

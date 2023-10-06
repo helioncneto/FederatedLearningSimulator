@@ -4,7 +4,7 @@ from typing import Tuple
 from utils.data import FakeCICIDS2017Dataset
 
 import torch.nn.functional as F
-import torchattacks
+#import torchattacks
 import numpy as np
 import torch
 import copy

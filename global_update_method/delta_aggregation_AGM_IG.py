@@ -34,16 +34,6 @@ class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
         super()._restart_env()
         self.local_K = []
 
-    def _select_participants(self):
-        super()._select_participants()
-        # AGM server model -> lookahead with global momentum
-        self.sending_model_dict = copy.deepcopy(self.model.state_dict())
-        for key in self.global_delta.keys():
-            self.sending_model_dict[key] += -1 * self.args.lamb * self.global_delta[key]
-
-        self.sending_model = copy.deepcopy(self.model)
-        self.sending_model.load_state_dict(self.sending_model_dict)
-
     def _decay(self):
         super()._decay()
         self.this_tau *= self.args.server_learning_rate_decay
@@ -77,6 +67,12 @@ class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
             self.local_delta.append(delta)
 
     def _global_aggregation(self):
+        self.sending_model_dict = copy.deepcopy(self.model.state_dict())
+        for key in self.global_delta.keys():
+            self.sending_model_dict[key] += -1 * self.args.lamb * self.global_delta[key]
+
+        self.sending_model = copy.deepcopy(self.model)
+        self.sending_model.load_state_dict(self.sending_model_dict)
         self.total_num_of_data_clients = sum(self.num_of_data_clients)
         self.FedAvg_weight = copy.deepcopy(self.local_weight[0])
         for key in self.FedAvg_weight.keys():
