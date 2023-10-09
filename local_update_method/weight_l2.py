@@ -20,7 +20,7 @@ class LocalUpdate(object):
         self.alpha=alpha
         self.args=args
 
-    def train(self, net):
+    def train(self, net, malicious=False):
         net.train()
         fixed_model = copy.deepcopy(net)
         optimizer = optim.SGD(net.parameters(), lr=self.lr, momentum=self.args.momentum,

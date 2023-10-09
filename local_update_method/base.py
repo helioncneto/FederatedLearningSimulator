@@ -2,7 +2,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from utils import DatasetSplit, IL, IL_negsum
-from utils.malicious import get_fgsm_dataloader
+from utils.malicious import get_malicious_loader
 from local_update_method.global_and_online_model import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 
@@ -37,8 +37,7 @@ class LocalUpdate:
                               weight_decay=self.args.weight_decay)
         epoch_loss = []
         # Atualizar as amostras caso for malicioso
-        if malicious == 'fgsm':
-            self.ldr_train = get_fgsm_dataloader(self.ldr_train, model, self.batch_size, self.device, self.args.mal_epsilon)
+        self.ldr_train = get_malicious_loader(malicious, self.ldr_train, model, self.batch_size, self.args.mal_epsilon)
 
         # train and update
         for _ in range(self.local_epoch):

@@ -6,6 +6,7 @@ import torch
 import numpy as np
 from torch.utils.data import DataLoader
 import os
+import sys
 import random
 import wandb
 import ssl
@@ -82,25 +83,28 @@ def main():
                                 shuffle=False, num_workers=args.workers)
         valloader = DataLoader(valset, batch_size=args.batch_size,
                                 shuffle=False, num_workers=args.workers)
+        method = args.method.casefold()
         try:
-            method = args.method.casefold()
-            local_update = LOCALUPDATE_LOOKUP_TABLE[method].get_local_method()
+            method = LOCALUPDATE_LOOKUP_TABLE[method]
         except KeyError:
             print('The chosen method is not valid.')
             print(f'Valid methods: {list(LOCALUPDATE_LOOKUP_TABLE.keys())}')
+            sys.exit()
+        local_update = method.get_local_method()
+
+        global_method = args.global_method.casefold()
         try:
-            global_method = args.global_method.casefold()
-            global_update = GLOBALAGGREGATION_LOOKUP_TABLE[global_method].get_global_method(args=args,
-                                                                                            device=device,
-                                                                                            trainset=trainset,
-                                                                                            testloader=testloader,
-                                                                                            valloader=valloader,
-                                                                                            local_update=local_update,
-                                                                                            experiment_name=experiment_name)
-            #              local_update=local_update)
+            global_method = GLOBALAGGREGATION_LOOKUP_TABLE[global_method]
         except KeyError:
             print('The chosen global method is not valid.')
             print(f'Valid global methods: {list(GLOBALAGGREGATION_LOOKUP_TABLE.keys())}')
+            sys.exit()
+
+        global_update = global_method.get_global_method(args=args, device=device, trainset=trainset,
+                                                        testloader=testloader, valloader=valloader,
+                                                        local_update=local_update,
+                                                        experiment_name=experiment_name)
+
         if global_update is not None and local_update is not None:
             #global_update(args=args, device=device, trainset=trainset, testloader=testloader, valloader=valloader,
             #              local_update=local_update)

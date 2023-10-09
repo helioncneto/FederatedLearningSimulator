@@ -124,7 +124,7 @@ def parse_arguments():
 
     parser.add_argument(
         "--mal_epsilon",
-        default=0.4,
+        default=0.5,
         type=float,
         metavar="N",
         help="The epsilon for FGSM attack",

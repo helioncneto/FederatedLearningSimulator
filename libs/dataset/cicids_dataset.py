@@ -34,12 +34,17 @@ class CICIDS2017Dataset(Dataset):
         if normalize == 'minmax':
             x = self.x.values
             col = self.x.columns
-            min_max_scaler = preprocessing.MinMaxScaler()
-            x_scaled = min_max_scaler.fit_transform(x)
+            # min_max_scaler = preprocessing.MinMaxScaler()
+            # x_scaled = min_max_scaler.fit_transform(x)
+            x_scaled = self.rescale(x)
             self.x = pd.DataFrame(x_scaled, columns=col)
 
     def __len__(self):
         return len(self.data)
+
+    def rescale(self, data, new_min=0, new_max=1):
+        """Rescale the data to be within the range [new_min, new_max]"""
+        return (data - data.min()) / (data.max() - data.min()) * (new_max - new_min) + new_min
 
     def __getitem__(self, idx):
         #print(f'X: {self.x.iloc[idx].to_numpy()} \t Y:{self.y.iloc[idx]}')

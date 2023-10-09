@@ -125,7 +125,7 @@ class BaseGlobalUpdate:
                                                           replace=False)
 
     def _local_update(self):
-        #for participant in tqdm(self.selected_participants, desc="Local update"):
+        # for participant in tqdm(self.selected_participants, desc="Local update"):
         for participant in self.selected_participants:
             print(f"Training participant: {participant}")
             self.start_time = time.time()
