@@ -164,6 +164,12 @@ def parse_arguments():
         help="Chose if you will sync with Weights and Bias",
     )
     parser.add_argument(
+        "--preserve_checkpoint",
+        default=False,
+        action="store_true",
+        help="Preserve the checkpoint file in the end of the training.",
+    )
+    parser.add_argument(
         "--use_checkpoint",
         action="store_true",
         help="Active if you want to use a checkpoint",

@@ -220,6 +220,7 @@ class BaseGlobalUpdate:
             save((self.args.eval_path, self.args.mode + "_test_sens"), self.test_metric['sensitivity'])
             save((self.args.eval_path, self.args.mode + "_test_spec"), self.test_metric['specificity'])
             save((self.args.eval_path, self.args.mode + "_test_f1"), self.test_metric['f1score'])
+        finish_checkpoint(self.experiment_name, self.args.preserve_checkpoint)
 
     def _saving_point(self):
         create_check_point(self.experiment_name, self.model, self.epoch+1, self.loss_train, self.malicious_list,

@@ -15,7 +15,7 @@ from libs.evaluation.metrics import Evaluator
 
 __all__ = ['l2norm', 'count_label_distribution', 'check_data_distribution', 'check_data_distribution_aug',
            'feature_extractor', 'classifier', 'get_model', 'get_optimizer', 'get_scheduler', 'save', 'shuffle',
-           'do_evaluation', 'create_check_point', 'load_check_point']
+           'do_evaluation', 'create_check_point', 'load_check_point', 'finish_checkpoint']
 
 from utils import get_dataset
 from utils.data import FakeCICIDS2017Dataset
@@ -274,3 +274,10 @@ def create_check_point(experiment_name: str, model: object, epoch: int, loss_tra
 
 def load_check_point(experiment_name: str) -> dict:
     return torch.load('checkpoint/' + experiment_name + '.pt')
+
+
+def finish_checkpoint(experiment_name: str, preserve_checkpoint: bool):
+    if preserve_checkpoint:
+        os.rename('checkpoint/' + experiment_name + '.pt', 'checkpoint/' + experiment_name + '_finished.pt')
+    else:
+        os.remove('checkpoint/' + experiment_name + '.pt')
