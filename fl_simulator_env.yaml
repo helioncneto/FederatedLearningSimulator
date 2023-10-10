@@ -159,4 +159,3 @@ dependencies:
     - requests==2.25.1
     - torchattacks==3.4.0
     - wget==3.2
-prefix: /home/helio/.conda/envs/fl_simulator
