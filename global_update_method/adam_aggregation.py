@@ -18,7 +18,7 @@ from mpl_toolkits import mplot3d
 from sklearn import metrics
 from mlxtend.plotting import plot_confusion_matrix
 from torch.utils.data import DataLoader
-from utils import log_ConfusionMatrix_Umap, log_acc
+# from utils import log_ConfusionMatrix_Umap, log_acc
 from utils import *
 from utils import CenterUpdate
 
