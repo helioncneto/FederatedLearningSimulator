@@ -6,7 +6,7 @@ import numpy as np
 from torch import nn
 import copy
 import torch
-from sklearn.manifold import TSNE
+# from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 from utils import DatasetSplit
 from global_update_method.distcheck import check_data_distribution
