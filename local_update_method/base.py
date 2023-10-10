@@ -37,7 +37,7 @@ class LocalUpdate:
                               weight_decay=self.args.weight_decay)
         epoch_loss = []
         # Atualizar as amostras caso for malicioso
-        self.ldr_train = get_malicious_loader(malicious, self.ldr_train, model, self.batch_size, self.args.mal_epsilon)
+        self.ldr_train = get_malicious_loader(malicious, self.ldr_train, model, self.batch_size, self.args)
 
         # train and update
         for _ in range(self.local_epoch):

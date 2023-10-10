@@ -85,8 +85,14 @@ class BaseGlobalUpdate:
                 self.trainset_fake, self.dataset_fake = add_malicious_participants(self.args, directory, filepath)
                 for participant in self.dataset_fake.keys():
                     self.malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(self.trainset_fake, self.dataset_fake[participant]), batch_size=self.args.batch_size, shuffle=True)
-            elif self.args.malicious_type == 'fgsm':
-                print("   => The malicious participants are using FGSM attack")
+            elif (self.args.malicious_type == 'targeted_fgsm' or self.args.malicious_type == 'untargeted_fgsm'
+                  or self.args.malicious_type == 'targeted_pgd' or self.args.malicious_type == 'untargeted_pgd'):
+                if self.args.malicious_type == 'targeted_fgsm' or self.args.malicious_type == 'untargeted_fgsm':
+                    print("   => The malicious participants are using " + (
+                        "un" if self.args.malicious_type == 'untargeted_fgsm' else "") + "targeted FGSM attack")
+                elif self.args.malicious_type == 'targeted_pgd' or self.args.malicious_type == 'untargeted_pgd':
+                    print("   => The malicious participants are using " + (
+                        "un" if self.args.malicious_type == 'untargeted_jsma' else "") + "targeted PGD attack")
                 mal_num = int(self.args.num_of_clients * self.args.malicious_rate)
                 mal_part_ids = np.random.choice(range(self.args.num_of_clients), mal_num, replace=False)
                 self.dataset_fake = {idx: [] for idx in mal_part_ids}

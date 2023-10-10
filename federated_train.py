@@ -76,7 +76,7 @@ def main():
         print('The chosen dataset is not valid.')
         print(f'Valid datasets: {list(dataset_loader.DATASETS_LOOKUP_TABLE.keys())}')
     if dataset_factory is not None:
-        global_update, local_update = None, None
+        # global_update, local_update = None, None
 
         trainset, testset, valset = dataset_factory.get_dataset(args)
         testloader = DataLoader(testset, batch_size=args.batch_size,
@@ -89,7 +89,6 @@ def main():
         except KeyError:
             print('The chosen method is not valid.')
             print(f'Valid methods: {list(LOCALUPDATE_LOOKUP_TABLE.keys())}')
-            sys.exit()
         local_update = method.get_local_method()
 
         global_method = args.global_method.casefold()
@@ -98,7 +97,6 @@ def main():
         except KeyError:
             print('The chosen global method is not valid.')
             print(f'Valid global methods: {list(GLOBALAGGREGATION_LOOKUP_TABLE.keys())}')
-            sys.exit()
 
         global_update = global_method.get_global_method(args=args, device=device, trainset=trainset,
                                                         testloader=testloader, valloader=valloader,
@@ -106,8 +104,8 @@ def main():
                                                         experiment_name=experiment_name)
 
         if global_update is not None and local_update is not None:
-            #global_update(args=args, device=device, trainset=trainset, testloader=testloader, valloader=valloader,
-            #              local_update=local_update)
+            # global_update(args=args, device=device, trainset=trainset, testloader=testloader, valloader=valloader,
+            #               local_update=local_update)
             global_update.train()
 
 

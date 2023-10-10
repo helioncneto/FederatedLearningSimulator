@@ -129,6 +129,29 @@ def parse_arguments():
         metavar="N",
         help="The epsilon for FGSM attack",
     )
+    parser.add_argument(
+        "--mal_theta",
+        default=1.0,
+        type=float,
+        metavar="N",
+        help="The tetha for JSMA attack",
+    )
+
+    parser.add_argument(
+        "--mal_gamma",
+        default=0.1,
+        type=float,
+        metavar="N",
+        help="The gamma for JSMA attack",
+    )
+
+    parser.add_argument(
+        "--mal_alpha",
+        default=0.1,
+        type=float,
+        metavar="N",
+        help="The alpha for PGD attack",
+    )
 
     parser.add_argument(
         "--cuda_device_id",
