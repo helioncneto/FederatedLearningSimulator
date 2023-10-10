@@ -10,7 +10,7 @@ import torch
 import matplotlib.pyplot as plt
 from utils import DatasetSplit
 from global_update_method.distcheck import check_data_distribution
-import umap.umap_ as umap
+# import umap.umap_ as umap
 from mpl_toolkits import mplot3d
 from sklearn import metrics
 from mlxtend.plotting import plot_confusion_matrix
