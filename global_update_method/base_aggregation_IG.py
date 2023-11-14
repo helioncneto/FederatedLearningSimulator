@@ -1,16 +1,124 @@
 # coding: utf-8
 from typing import Tuple
-from libs.methods.ig import selection_ig, update_participants_score, calc_ig
+from libs.methods.ig import selection_ig, update_participants_score, calc_ig, update_selection_count
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from torch.utils.data import DataLoader, TensorDataset
-from utils.helper import save, shuffle, do_evaluation, add_malicious_participants, get_participant, \
-    get_participant_loader, get_filepath
+from utils.helper import save, shuffle, do_evaluation, get_participant, get_participant_loader, get_filepath
+
+from utils.malicious import add_malicious_participants
+from global_update_method.base_aggregation import BaseGlobalUpdate
 
 
-def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
+class FedSBSGlobalUpdate(BaseGlobalUpdate):
+    def __init__(self, args, device, trainset, testloader, local_update, experiment_name, valloader=None):
+        super().__init__(args, device, trainset, testloader, local_update, experiment_name, valloader)
+
+        self.global_losses = []
+        self.total_participants = self.args.num_of_clients
+        self.participant_dataloader_table = {}
+        self.ig = {}
+        self.entropy = {}
+        '''self.participants_score = {idx: self.selected_participants_num / self.total_participants for idx in
+                                   range(self.total_participants)}'''
+        self.participants_score = {idx: -np.inf for idx in range(self.total_participants)}
+        self.not_selected_participants = list(self.participants_score.keys())
+        self.ep_greedy = 1
+        self.ep_greedy_decay = pow(0.01, 1 / self.args.global_epochs)
+        self.participants_count = {participant: 0 for participant in list(self.participants_score.keys())}
+        # self.blocked = {}
+        self.eg_momentum = 0.9
+        self.temperature = args.temperature
+        self.cool = args.cool
+
+        for participant in range(self.args.num_of_clients):
+            participant_dataset_ldr = DataLoader(DatasetSplit(self.trainset, self.dataset[participant]),
+                                                 batch_size=self.args.batch_size, shuffle=True)
+            self.participant_dataloader_table[participant] = participant_dataset_ldr
+
+    def _get_fedsbs_args(self):
+        return {'ig': self.ig, 'entropy': self.entropy, 'participants_score': self.participants_score,
+                'not_selected_participants': self.not_selected_participants, 'ep_greedy': self.ep_greedy,
+                'participants_count': self.participants_count, 'temperature': self.temperature}
+
+    def _restart_env(self):
+        super()._restart_env()
+        self.global_losses = []
+
+    def _select_participants(self):
+
+        if self.epoch == 1 or self.args.participation_rate >= 1:
+            print('Selecting the participants')
+            self.selected_participants = np.random.choice(range(self.args.num_of_clients),
+                                                          self.selected_participants_num,
+                                                          replace=False)
+            self.not_selected_participants = list(set(self.not_selected_participants) - set(self.selected_participants))
+            self.participants_count = update_selection_count(self.selected_participants, self.participants_count)
+        elif self.args.participation_rate < 1:
+            print('PARTICIPANT SCORE: ', self.participants_score)
+            self.selected_participants, self.not_selected_participants = selection_ig(self.selected_participants_num,
+                                                                                      self.ep_greedy,
+                                                                                      self.not_selected_participants,
+                                                                                      self.participants_score,
+                                                                                      self.temperature,
+                                                                                      participants_count=self.participants_count)
+            self.participants_count = update_selection_count(self.selected_participants, self.participants_count)
+        print(' Participants IDS: ', self.selected_participants)
+
+    def _update_global_model(self):
+        super()._update_global_model()
+        #self.global_losses = []
+        #print("TEMPERATURA: " + str(self.temperature))
+        self.model.eval()
+
+        for participant in self.selected_participants:
+            participant_dataset_loader = get_participant_loader(participant, self.malicious_list,
+                                                                self.participant_dataloader_table,
+                                                                self.malicious_participant_dataloader_table)
+            if participant in self.entropy.keys():
+                current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=self.model,
+                                                       device=self.device, evaluate=False)
+            else:
+                current_global_metrics = do_evaluation(testloader=participant_dataset_loader, model=self.model,
+                                                       device=self.device, evaluate=False, calc_entropy=True)
+                self.entropy[participant] = current_global_metrics['entropy']
+            self.global_losses.append(current_global_metrics['loss'])
+            print(f'=> Participant {participant} loss: {current_global_metrics["loss"]}')
+
+        self.global_loss = sum(self.global_losses) / len(self.global_losses)
+        print(f'=> Mean global loss: {self.global_loss}')
+        print("TEMPERATURE: " + str(self.temperature))
+
+    def _model_validation(self):
+        super()._model_validation()
+        cur_ig = calc_ig(self.global_loss, self.local_loss, self.entropy)
+        self.participants_score, self.ig = update_participants_score(self.participants_score, cur_ig, self.ig,
+                                                                     self.eg_momentum)
+        print(f'Information Gain: {self.ig}')
+
+    def _decay(self):
+        super()._decay()
+        self.ep_greedy *= self.ep_greedy_decay
+        self.temperature *= self.cool
+
+    def _saving_point(self):
+        create_check_point(self.experiment_name, self.model, self.epoch + 1, self.loss_train, self.malicious_list,
+                           self.this_lr, self.this_alpha, self.duration, fedsbs=self._get_fedsbs_args())
+
+    def _loading_point(self, checkpoint: dict):
+        super()._loading_point(checkpoint)
+        self.ig = checkpoint['fesbs']['ig']
+        self.entropy = checkpoint['fesbs']['entropy']
+        self.participants_score = checkpoint['fesbs']['participants_score']
+        self.not_selected_participants = checkpoint['fesbs']['not_selected_participants']
+        self.ep_greedy = checkpoint['fesbs']['ep_greedy']
+        self.participants_count = checkpoint['fesbs']['participants_count']
+        self.temperature = checkpoint['fesbs']['temperature']
+
+
+'''def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
@@ -67,8 +175,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         eg_momentum = 0.9
 
         # Sample participating agents for this global round
-        '''selected_participants = []
-        selection_helper = copy.deepcopy(participants_score)'''
         selected_participants = None
 
         if len(blocked) > 0:
@@ -120,15 +226,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
             local_model = copy.deepcopy(model).to(device)
             local_model.load_state_dict(weight)
             local_model.eval()
-
-            #batch_loss = torch.tensor([]).to(device)
-            #with torch.no_grad():
-            #    for x, labels in testloader:
-            #        x, labels = x.to(device), labels.to(device)
-            #        outputs = local_model(x)
-            #        local_val_loss = loss_func(outputs, labels)
-            #        batch_loss = torch.cat((batch_loss, local_val_loss.unsqueeze(0)), 0)
-            #    models_val_loss[participant] = (torch.sum(batch_loss) / batch_loss.size(0)).item()
 
             delta = {}
             for key in weight.keys():
@@ -186,19 +283,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
 
         participants_score, ig = update_participants_score(participants_score, cur_ig, ig, eg_momentum)
 
-        '''for client_id, client_ig in cur_ig.items():
-            if client_id not in ig.keys():
-                ig[client_id] = []
-                ig[client_id].append(client_ig)
-            else:
-                ig[client_id].append(client_ig)
-            if len(ig[client_id]) <= 1:
-                participants_score[client_id] = ig[client_id]
-            else:
-                delta_term = sum(ig[client_id][:-1]) / len(ig[client_id][:-1])
-                participants_score[client_id] = ((1 - eg_momentum) * delta_term) + (eg_momentum * ig[client_id][-1])'''
-            #participants_score[client_id] = sum(ig[client_id]) / len(ig[client_id])
-
         print(participants_score)
 
 
@@ -250,10 +334,11 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         print('Final Sensitivity of the network on the 10000 test images: %f %%' % test_metric['sensitivity'])
         print('Final Specificity of the network on the 10000 test images: %f %%' % test_metric['specificity'])
         print('Final F1-score of the network on the 10000 test images: %f %%' % test_metric['f1score'])
-
+        
         save((args.eval_path, args.global_method + "_test_acc"), test_metric['accuracy'])
         save((args.eval_path, args.global_method + "_test_prec"), test_metric['precision'])
         save((args.eval_path, args.global_method + "_test_sens"), test_metric['sensitivity'])
         save((args.eval_path, args.global_method + "_test_spec"), test_metric['specificity'])
         save((args.eval_path, args.global_method + "_test_f1"), test_metric['f1score'])
         save((args.eval_path, args.global_method + "_ig"), ig)
+'''

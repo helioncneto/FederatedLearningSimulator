@@ -8,26 +8,57 @@ import numpy as np
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from torch.utils.data import DataLoader, TensorDataset
-from utils.helper import save, shuffle, do_evaluation, add_malicious_participants, get_participant, get_filepath
+from utils.helper import save, shuffle, do_evaluation, get_participant, get_filepath
+from utils.malicious import add_malicious_participants
 from libs.methods.Oort import create_training_selector
 from libs.config.config import load_yaml_conf
+from global_update_method.base_aggregation import BaseGlobalUpdate
 
 
-def gen_train_fake(samples: int = 10000, features: int = 77, interval: Tuple[int, int] = (0, 1),
-                   classes: tuple = (0, 1)) -> TensorDataset:
-    train_np_x = np.array(
-        [[np.random.uniform(interval[0], interval[1]) for _ in range(features)] for _ in range(samples)])
-    train_np_y = np.array([shuffle(np.array(classes)) for _ in range(samples)])
+class OortGlobalUpdate(BaseGlobalUpdate):
+    def __init__(self, args, device, trainset, testloader, local_update, experiment_name, valloader=None):
+        super().__init__(args, device, trainset, testloader, local_update, experiment_name, valloader)
+        self.oort_args = load_yaml_conf("libs/config/oort_config.yaml")
+        self.selector = create_training_selector(self.oort_args)
+        # initial_score = {'reward': 0, 'duration':0}
 
-    train_tensor_x = torch.Tensor(train_np_x)
-    train_tensor_y = torch.Tensor(train_np_y)
+        # Registering participants
+        [self.selector.register_client(participant, {'reward': random(), 'duration': 0}) for participant in
+         range(self.args.num_of_clients)]
 
-    trainset = TensorDataset(train_tensor_x, train_tensor_y)
-    # dataloader = DataLoader(trainset, batch_size=batch, shuffle=False)
-    return trainset
+    def _select_participants(self):
+        if self.epoch == 1 or self.args.participation_rate >= 1:
+            print('Selecting the participants')
+            self.selected_participants = np.random.choice(range(self.args.num_of_clients),
+                                                          self.selected_participants_num, replace=False)
+        else:
+            self.selected_participants = self.selector.select_participant(self.args.num_of_clients)[:self.selected_participants_num]
+
+    def _model_validation(self):
+        super()._model_validation()
+        for idx, participant in enumerate(self.selected_participants):
+            '''print(self.local_loss)
+            print("IDX: ", idx)
+            print("Num data clients: ", self.num_of_data_clients[idx])
+            print("Local Loss: ", self.local_loss[idx])
+            print("Duration: ", self.duration[idx])'''
+            self.selector.update_client_util(participant,
+                                        {'reward': self.num_of_data_clients[idx] * np.sqrt(self.local_loss[participant] ** 2),
+                                         'duration': self.duration[idx],
+                                         'time_stamp': self.epoch,
+                                         'status': True})
+        self.selector.nextRound()
+
+    def _saving_point(self):
+        create_check_point(self.experiment_name, self.model, self.epoch + 1, self.loss_train, self.malicious_list,
+                           self.this_lr, self.this_alpha, self.duration, selector=self.selector)
+
+    def _loading_point(self, checkpoint: dict):
+        super()._loading_point(checkpoint)
+        self.selector.load_state_dict(checkpoint['oort'])
 
 
-def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
+'''def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
     model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
                       l2_norm=args.l2_norm)
     model.to(device)
@@ -85,8 +116,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         global_weight = copy.deepcopy(model.state_dict())
 
         # Sample participating agents for this global round
-        '''selected_participants = []
-        selection_helper = copy.deepcopy(participants_score)'''
         selected_participants = None
         if epoch == 0 or args.participation_rate >= 1:
             print('Selecting the participants')
@@ -160,18 +189,6 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
                                          'time_stamp': epoch+1,
                                          'status': True})
         selector.nextRound()
-
-        '''for client_id, client_ig in cur_ig.items():
-            if client_id not in ig.keys():
-                ig[client_id] = []
-                ig[client_id].append(client_ig)
-            else:
-                ig[client_id].append(client_ig)
-            if len(ig[client_id]) <= 1:
-                participants_score[client_id] = ig[client_id]
-            else:
-                delta_term = sum(ig[client_id][:-1]) / len(ig[client_id][:-1])
-                participants_score[client_id] = ((1 - eg_momentum) * delta_term) + (eg_momentum * ig[client_id][-1])'''
             #participants_score[client_id] = sum(ig[client_id]) / len(ig[client_id])
 
 
@@ -226,3 +243,4 @@ def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=Non
         save((args.eval_path, args.global_method + "_test_spec"), test_metric['specificity'])
         save((args.eval_path, args.global_method + "_test_f1"), test_metric['f1score'])
 
+'''

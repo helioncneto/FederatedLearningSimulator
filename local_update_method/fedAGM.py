@@ -22,7 +22,7 @@ class LocalUpdate:
         self.args = args
         self.K = len(self.ldr_train)
 
-    def train(self, net, delta=None):
+    def train(self, net, delta=None, malicious=False):
         net.train()
         fixed_model = copy.deepcopy(net)
         for param_t in fixed_model.parameters():

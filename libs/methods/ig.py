@@ -12,22 +12,34 @@ def select_participant(selection_type: str, selection_helper: dict, greedy_index
     if selection_type == "random":
         return np.random.choice(list(selection_helper.keys()))
     elif selection_type == "greedy":
-        return sorted(selection_helper, key=selection_helper.get, reverse=True)[greedy_index]
+        try:
+            selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[greedy_index]
+        except IndexError:
+            selected = np.random.choice(list(selection_helper.keys()))
+        return selected
 
 
 def selection_on_blocked(selected, participants_count, temperature, selection_helper, selection_type):
-    print(f'Participant {selected} is blocked')
     is_blocked = True
     sel = 0
     while is_blocked:
+        print("Vezes que o participante foi selecionado: ", participants_count[selected])
         p = math.exp(-participants_count[selected] / (temperature))
         rand = random.random()
+        print("Probabilidade do participante ser selecionado: ", p)
+        print("Valor aleatório: ", rand)
+        print(f"O participante {'não foi' if rand < p else 'foi'} bloqueado")
         if rand < p:
             return selected
         else:
+            print(f'Participant {selected} is blocked')
             sel += 1
-            selected = select_participant(selection_type, selection_helper, sel)
-            is_blocked = selected in participants_count.keys()
+            if sel < len(selection_helper):
+                selected = select_participant(selection_type, selection_helper, sel)
+                is_blocked = selected in participants_count.keys()
+            else:
+                selected = select_participant("random", selection_helper, sel)
+                is_blocked = False
     return selected
 
 
@@ -35,6 +47,7 @@ def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_
                  participants_score: dict, temperature: int, participants_count: dict = {}) -> tuple:
     selection_helper = copy.deepcopy(participants_score)
     selected_participants = []
+    print("Vezes Selecionados Geral: ", participants_count)
     for _ in range(selected_participants_num):
         p = random.random()
         if p < ep_greedy:
@@ -49,9 +62,6 @@ def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_
                     if selected in participants_count.keys():
                         selected = selection_on_blocked(selected, participants_count, temperature, selection_helper,
                                                         "random")
-                    #while participants_count[selected] >= 3:
-                    #    print(f'Participant {selected} is blocked')
-                    #    selected = np.random.choice(list(selection_helper.keys()))
             selection_helper.pop(selected)
             selected_participants.append(selected)
         else:
@@ -64,15 +74,17 @@ def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_
                 if selected in participants_count.keys():
                     selected = selection_on_blocked(selected, participants_count, temperature, selection_helper,
                                                     "greedy")
-            #while participants_count[selected] >= 3:
-            #    print(f'Participant {selected} is blocked')
-            #    sel += 1
-            #    selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[sel]
             if selected in not_selected_participants:
                 not_selected_participants.remove(selected)
             selection_helper.pop(selected)
             selected_participants.append(selected)
     return selected_participants, not_selected_participants
+
+
+def update_selection_count(selected_participants, participants_count):
+    for participant in selected_participants:
+        participants_count[participant] += 1
+    return participants_count
 
 
 def update_participants_score(participants_score: dict, cur_ig: dict, ig: dict,

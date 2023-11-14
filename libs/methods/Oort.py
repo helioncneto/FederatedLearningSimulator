@@ -46,6 +46,39 @@ class _training_selector:
 
         np2.random.seed(sample_seed)
 
+    def state_dict(self) -> dict:
+        return {
+            'totalArms': self.totalArms,
+            'training_round': self.training_round,
+            'exploration': self.exploration,
+            'alpha': self.alpha,
+            'unexplored': self.unexplored,
+            'args': self.args,
+            'round_threshold': self.round_threshold,
+            'last_util_record': self.last_util_record,
+            'exploitUtilHistory': self.exploitUtilHistory,
+            'exploreUtilHistory': self.exploreUtilHistory,
+            'exploitClients': self.exploitClients,
+            'exploreClients': self.exploreClients,
+            'successfulClients': self.successfulClients,
+            'blacklist': self.blacklist
+        }
+
+    def load_state_dict(self, conf_dict: dict) -> None:
+        self.totalArms = conf_dict['totalArms']
+        self.training_round = conf_dict['training_round']
+        self.exploration = conf_dict['exploration']
+        self.alpha = conf_dict['alpha']
+        self.unexplored = conf_dict['unexplored']
+        self.round_threshold = conf_dict['round_threshold']
+        self.last_util_record = conf_dict['last_util_record']
+        self.exploitUtilHistory = conf_dict['exploitUtilHistory']
+        self.exploreUtilHistory = conf_dict['exploreUtilHistory']
+        self.exploitClients = conf_dict['exploitClients']
+        self.exploreClients = conf_dict['exploreClients']
+        self.successfulClients = conf_dict['successfulClients']
+        self.blacklist = conf_dict['blacklist']
+
     def register_client(self, clientId, feedbacks):
         # Initiate the score for arms. [score, time_stamp, # of trials, size of client, auxi, duration]
         if clientId not in self.totalArms:

@@ -6,20 +6,60 @@ import numpy as np
 from torch import nn
 import copy
 import torch
-from sklearn.manifold import TSNE
+# from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 from utils import DatasetSplit
 from global_update_method.distcheck import check_data_distribution
-import umap.umap_ as umap
+# import umap.umap_ as umap
 from mpl_toolkits import mplot3d
 from sklearn import metrics
 from mlxtend.plotting import plot_confusion_matrix
 from torch.utils.data import DataLoader
-from utils import log_ConfusionMatrix_Umap, log_acc
-from utils import calculate_delta_cv,calculate_delta_variance, calculate_divergence_from_optimal,calculate_divergence_from_center
+# from utils import log_ConfusionMatrix_Umap, log_acc
+# from utils import calculate_delta_cv,calculate_delta_variance, calculate_divergence_from_optimal,calculate_divergence_from_center
 from utils import CenterUpdate
 from utils import *
-from utils.helper import add_malicious_participants, get_participant, get_filepath
+from utils.helper import get_participant, get_filepath
+from utils.malicious import add_malicious_participants
+from global_update_method.delta_aggregation import DeltaGlobalUpdate
+
+
+class SlowmoGlobalUpdate(DeltaGlobalUpdate):
+    def __init__(self, args, device, trainset, testloader, local_update, experiment_name, valloader=None):
+        super().__init__(args, device, trainset, testloader, local_update, experiment_name, valloader)
+        self.global_momentum = copy.deepcopy(model.state_dict())
+        for key in self.global_momentum.keys():
+            self.global_momentum[key] = torch.zeros_like(self.global_momentum[key])
+
+    def _global_aggregation(self):
+        self.sending_model_dict = copy.deepcopy(self.model.state_dict())
+        for key in self.global_delta.keys():
+            self.sending_model_dict[key] += -1 * self.args.lamb * self.global_delta[key]
+
+        self.sending_model = copy.deepcopy(self.model)
+        self.sending_model.load_state_dict(self.sending_model_dict)
+
+        self.total_num_of_data_clients = sum(self.num_of_data_clients)
+        self.FedAvg_weight = copy.deepcopy(self.local_weight[0])
+        for key in FedAvg_weight.keys():
+            for i in range(len(self.local_weight)):
+                if i == 0:
+                    self.FedAvg_weight[key] *= self.num_of_data_clients[i]
+                else:
+                    self.FedAvg_weight[key] += self.local_weight[i][key] * self.num_of_data_clients[i]
+            self.FedAvg_weight[key] /= total_num_of_data_clients
+        self.global_delta = copy.deepcopy(local_delta[0])
+
+        for key in self.global_delta.keys():
+            for i in range(len(self.local_delta)):
+                if i == 0:
+                    self.global_delta[key] *= self.num_of_data_clients[i]
+                else:
+                    self.global_delta[key] += self.local_delta[i][key] * self.num_of_data_clients[i]
+            self.global_delta[key] = self.global_delta[key] / (-1 * total_num_of_data_clients)
+            global_lr = self.args.g_lr
+            self.global_momentum[key] = self.args.beta * self.global_momentum[key] + self.global_delta[key] / self.this_lr
+            self.global_weight[key] = self.global_weight[key] - global_lr * self.this_lr * self.global_momentum[key]
 
 
 def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):

@@ -1,152 +1,284 @@
 # coding: utf-8
 
-from utils import get_scheduler, get_optimizer, get_model, get_dataset
+from utils import get_scheduler, get_optimizer, get_model, get_dataset, create_check_point, load_check_point
 import numpy as np
 import os
+import sys
+import time
 from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from libs.evaluation.metrics import Evaluator
-from utils.helper import save, do_evaluation, add_malicious_participants, get_participant, get_filepath
+from utils.helper import save, do_evaluation, get_participant, get_filepath
+from utils.malicious import add_malicious_participants
 from torch.utils.data import DataLoader, TensorDataset
+from tqdm import tqdm
 
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 
-def GlobalUpdate(args, device, trainset, testloader, local_update, valloader=None):
-    model = get_model(arch=args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[args.set],
-                      l2_norm=args.l2_norm)
-    model.to(device)
-    if args.use_wandb:
-        wandb.watch(model)
-    model.train()
+class BaseGlobalUpdate:
+    def __init__(self, args, device, trainset, testloader, local_update, experiment_name, valloader=None):
+        self.args = args
+        self.device = device
+        self.trainset = trainset
+        self.testloader = testloader
+        self.local_update = local_update
+        self.valloader = valloader
+        self.epoch = 0
+        self.loss_avg = 0
+        self.total_num_of_data_clients = 1
+        self.duration = []
+        self.experiment_name = experiment_name
 
+        assert os.path.isdir(self.args.eval_path)
 
-    dataset = get_dataset(args, trainset, args.num_of_clients, args.mode)
-    loss_train = []
-    acc_train = []
-    this_lr = args.lr
-    this_alpha = args.alpha
-    selected_participants_num = max(int(args.participation_rate * args.num_of_clients), 1)
-    selected_participants = None
+        self.model = get_model(arch=self.args.arch, num_classes=NUM_CLASSES_LOOKUP_TABLE[self.args.set],
+                          l2_norm=self.args.l2_norm)
+        self.model.to(self.device)
+        if self.args.use_wandb:
+            wandb.watch(self.model)
+        self.model.train()
+        self.global_weight = copy.deepcopy(self.model.state_dict())
 
-    # Gen fake data
-    malicious_participant_dataloader_table = {}
-    if args.malicious_rate > 0:
-        directory, filepath = get_filepath(args, True)
-        trainset_fake, dataset_fake = add_malicious_participants(args, directory, filepath)
-        for participant in dataset_fake.keys():
-            malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(trainset_fake,
-                                                                                          dataset_fake[participant]),
-                                                                             batch_size=args.batch_size, shuffle=True)
-    else:
-        trainset_fake, dataset_fake = {}, {}
+        self.dataset = get_dataset(self.args, trainset, self.args.num_of_clients, self.args.mode)
+        self.loss_train = []
+        self.acc_train = []
+        self.this_lr = self.args.lr
+        self.this_alpha = self.args.alpha
+        self.selected_participants_num = max(int(self.args.participation_rate * self.args.num_of_clients), 1)
+        self.selected_participants = None
+        self.FedAvg_weight = copy.deepcopy(self.model.state_dict())
 
-    for epoch in range(args.global_epochs):
-        print('starting a new epoch')
-        wandb_dict = {}
-        num_of_data_clients = []
-        local_weight = []
-        local_loss = []
-        local_delta = []
-        global_weight = copy.deepcopy(model.state_dict())
+        self.wandb_dict = {}
+        self.num_of_data_clients = []
+        self.local_weight = []
+        self.local_loss = {}
+        self.local_delta = []
+        self.local_K = []
+        self.metric = {}
+        self.test_metric = {}
 
-        # Sample participating agents for this global round
+        # Gen malicious data
+        self.malicious_list = {}
+        self.trainset_fake, self.dataset_fake = {}, {}
+        self.malicious_participant_dataloader_table = {}
+        self._set_malicious()
 
-        if epoch == 0 or args.participation_rate < 1:
+    def _restart_env(self):
+        self.wandb_dict = {}
+        self.num_of_data_clients = []
+        self.local_weight = []
+        self.local_loss = {}
+        self.local_delta = []
+        self.global_weight = copy.deepcopy(self.model.state_dict())
+        self.metric = {}
+        self.test_metric = {}
+        self.duration = []
+        self.local_K = []
+
+    def _set_malicious(self):
+        if 0 < self.args.malicious_rate <= 1:
+            print("=> Training with malicious participants!")
+            directory, filepath = get_filepath(self.args, True)
+            if self.args.malicious_type == 'random':
+                self.trainset_fake, self.dataset_fake = add_malicious_participants(self.args, directory, filepath)
+                for participant in self.dataset_fake.keys():
+                    self.malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(self.trainset_fake, self.dataset_fake[participant]), batch_size=self.args.batch_size, shuffle=True)
+            elif (self.args.malicious_type == 'targeted_fgsm' or self.args.malicious_type == 'untargeted_fgsm'
+                  or self.args.malicious_type == 'targeted_pgd' or self.args.malicious_type == 'untargeted_pgd'):
+                if self.args.malicious_type == 'targeted_fgsm' or self.args.malicious_type == 'untargeted_fgsm':
+                    print("   => The malicious participants are using " + (
+                        "un" if self.args.malicious_type == 'untargeted_fgsm' else "") + "targeted FGSM attack")
+                elif self.args.malicious_type == 'targeted_pgd' or self.args.malicious_type == 'untargeted_pgd':
+                    print("   => The malicious participants are using " + (
+                        "un" if self.args.malicious_type == 'untargeted_jsma' else "") + "targeted PGD attack")
+                mal_num = int(self.args.num_of_clients * self.args.malicious_rate)
+                mal_part_ids = np.random.choice(range(self.args.num_of_clients), mal_num, replace=False)
+                self.dataset_fake = {idx: [] for idx in mal_part_ids}
+                self.trainset_fake = None
+            elif self.args.malicious_type == 'jsma':
+                print("   => The malicious participants are using JSMA attack")
+            else:
+                print("The malicious participant type is not defined!")
+                sys.exit()
+            print("Malicious participants IDS: ", list(self.dataset_fake.keys()))
+            '''for participant in self.dataset_fake.keys():
+                if self.args.malicious_type == 'random':
+                    self.malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(self.trainset_fake,
+                                                                                                       self.dataset_fake[participant]),
+                                                                                                       batch_size=self.args.batch_size, shuffle=True)'''
+
+        elif self.args.malicious_rate > 1:
+            print("The malicious rate cannot be greater than 1")
+            sys.exit()
+        elif self.args.malicious_rate < 0:
+            print("The malicious rate cannot be negative")
+            sys.exit()
+
+    def _decay(self):
+        self.this_lr *= self.args.learning_rate_decay
+        if self.args.alpha_mul_epoch:
+            self.this_alpha = self.args.alpha * (epoch + 1)
+        elif self.args.alpha_divide_epoch:
+            self.this_alpha = self.args.alpha / (epoch + 1)
+
+    def _select_participants(self):
+        if self.epoch == 1 or self.args.participation_rate < 1:
             print('Selecting the participants')
-            selected_participants = np.random.choice(range(args.num_of_clients),
-                                                     selected_participants_num,
-                                                     replace=False)
+            self.selected_participants = np.random.choice(range(self.args.num_of_clients),
+                                                          self.selected_participants_num,
+                                                          replace=False)
 
-        print(f"This is global {epoch} epoch")
-        if selected_participants is None:
-            return
+    def _local_update(self):
+        # for participant in tqdm(self.selected_participants, desc="Local update"):
+        for participant in self.selected_participants:
+            print(f"Training participant: {participant}")
+            self.start_time = time.time()
+            self.num_of_data_clients, idxs, current_trainset, malicious = get_participant(self.args, participant,
+                                                                                          self.dataset,
+                                                                                          self.dataset_fake,
+                                                                                          self.num_of_data_clients,
+                                                                                          self.trainset,
+                                                                                          self.trainset_fake,
+                                                                                          self.epoch)
+            local_setting = self.local_update(args=self.args, lr=self.this_lr, local_epoch=self.args.local_epochs,
+                                              device=self.device,
+                                              batch_size=self.args.batch_size, dataset=current_trainset, idxs=idxs,
+                                              alpha=self.this_alpha)
+            self.malicious_list[participant] = malicious
 
-        print('Training participants')
-        malicious_list = {}
-        for participant in selected_participants:
-            num_of_data_clients, idxs, current_trainset, malicious = get_participant(args, participant, dataset,
-                                                                                     dataset_fake, num_of_data_clients,
-                                                                                     trainset, trainset_fake, epoch)
-            local_setting = local_update(args=args, lr=this_lr, local_epoch=args.local_epochs, device=device,
-                                         batch_size=args.batch_size, dataset=current_trainset, idxs=idxs,
-                                         alpha=this_alpha)
-            malicious_list[participant] = malicious
-
-            weight, loss = local_setting.train(net=copy.deepcopy(model).to(device))
-            local_weight.append(copy.deepcopy(weight))
-            local_loss.append(copy.deepcopy(loss))
+            weight, loss = local_setting.train(net=copy.deepcopy(self.model).to(self.device), malicious=malicious)
+            self.local_K.append(local_setting.K)
+            if self.args.malicious_type == 'fgsm':
+                self.malicious_participant_dataloader_table[participant] = local_setting.get_dataloader()
+            self.local_weight.append(copy.deepcopy(weight))
+            self.local_loss[participant] = copy.deepcopy(loss)
             delta = {}
             for key in weight.keys():
-                delta[key] = weight[key] - global_weight[key]
-            local_delta.append(delta)
+                delta[key] = weight[key] - self.global_weight[key]
+            self.local_delta.append(delta)
+            self.end_time = time.time()
+            self.duration.append(self.end_time - self.start_time)
 
-        total_num_of_data_clients = sum(num_of_data_clients)
-        FedAvg_weight = copy.deepcopy(local_weight[0])
-        for key in FedAvg_weight.keys():
-            for i in range(len(local_weight)):
+    def _global_aggregation(self):
+        self.total_num_of_data_clients = sum(self.num_of_data_clients)
+        self.FedAvg_weight = copy.deepcopy(self.local_weight[0])
+        for key in self.FedAvg_weight.keys():
+            for i in range(len(self.local_weight)):
                 if i == 0:
-                    FedAvg_weight[key] *= num_of_data_clients[i]
-                else:                       
-                    FedAvg_weight[key] += local_weight[i][key]*num_of_data_clients[i]
-            FedAvg_weight[key] /= total_num_of_data_clients
-        model.load_state_dict(FedAvg_weight)
+                    self.FedAvg_weight[key] *= self.num_of_data_clients[i]
+                else:
+                    self.FedAvg_weight[key] += self.local_weight[i][key] * self.num_of_data_clients[i]
+            self.FedAvg_weight[key] /= self.total_num_of_data_clients
 
-        loss_avg = sum(local_loss) / len(local_loss)
-        print(' num_of_data_clients : ', num_of_data_clients)
-        print(' Participants IDS: ', selected_participants)
-        print(' Average loss {:.3f}'.format(loss_avg))
-        loss_train.append(loss_avg)
+    def _update_global_model(self):
+        self.model.load_state_dict(self.FedAvg_weight)
+        self.loss_avg = sum(self.local_loss) / len(self.local_loss)
+        print(f'- Num. of data per client : {self.num_of_data_clients}')
+        print(f'- Participants IDS: {self.selected_participants}')
+        print(f'- Average loss {self.loss_avg}')
+        print(f"Local losses: {self.local_loss}")
+        self.loss_train.append(self.loss_avg)
 
-        if epoch % args.print_freq == 0:
-            print('performing the evaluation')
-            model.eval()
-            metrics = do_evaluation(testloader=testloader, model=model, device=device)
-            # accuracy = (accuracy / len(testloader)) * 100
-            print('Accuracy of the network on the 10000 test images: %f %%' % metrics['accuracy'])
-            print('Precision of the network on the 10000 test images: %f %%' % metrics['precision'])
-            print('Sensitivity of the network on the 10000 test images: %f %%' % metrics['sensitivity'])
-            print('Specificity of the network on the 10000 test images: %f %%' % metrics['specificity'])
-            print('F1-score of the network on the 10000 test images: %f %%' % metrics['f1score'])
-            model.train()
+    def _model_validation(self):
+        self.model.eval()
+        self.metrics = do_evaluation(testloader=self.testloader, model=self.model, device=self.device)
 
-        wandb_dict[args.mode + "_acc"] = metrics['accuracy']
-        wandb_dict[args.mode + "_prec"] = metrics['precision']
-        wandb_dict[args.mode + "_sens"] = metrics['sensitivity']
-        wandb_dict[args.mode + "_spec"] = metrics['specificity']
-        wandb_dict[args.mode + "_f1"] = metrics['f1score']
-        wandb_dict[args.mode + '_loss'] = loss_avg
-        wandb_dict['lr'] = this_lr
-        if args.use_wandb:
+        print(f'Accuracy of the global model on validation set: {self.metrics["accuracy"]} %%')
+        print(f'Precision of the global model on validation set: {self.metrics["precision"]} %%')
+        print(f'Sensitivity of the global model on validation set: {self.metrics["sensitivity"]} %%')
+        print(f'Specificity of the global model on validation set: {self.metrics["specificity"]} %%')
+        print(f'F1-score of the global model on validation set: {self.metrics["f1score"]} %%')
+        self.model.train()
+
+        self.wandb_dict[self.args.mode + "_acc"] = self.metrics['accuracy']
+        self.wandb_dict[self.args.mode + "_prec"] = self.metrics['precision']
+        self.wandb_dict[self.args.mode + "_sens"] = self.metrics['sensitivity']
+        self.wandb_dict[self.args.mode + "_spec"] = self.metrics['specificity']
+        self.wandb_dict[self.args.mode + "_f1"] = self.metrics['f1score']
+        self.wandb_dict[self.args.mode + '_loss'] = self.loss_avg
+        self.wandb_dict['lr'] = self.this_lr
+        if self.args.use_wandb:
             print('logging to wandb...')
-            wandb.log(wandb_dict)
-        save((args.eval_path, args.global_method + "_acc"), wandb_dict[args.mode + "_acc"] )
-        save((args.eval_path, args.global_method + "_prec"), wandb_dict[args.mode + "_prec"])
-        save((args.eval_path, args.global_method + "_sens"), wandb_dict[args.mode + "_sens"])
-        save((args.eval_path, args.global_method + "_spec"), wandb_dict[args.mode + "_spec"])
-        save((args.eval_path, args.global_method + "_f1"), wandb_dict[args.mode + "_f1"])
-        save((args.eval_path, args.global_method + "_loss"), wandb_dict[args.mode + "_loss"])
-        print('Decay LR...')
-        this_lr *= args.learning_rate_decay
-        if args.alpha_mul_epoch:
-            this_alpha = args.alpha * (epoch + 1)
-        elif args.alpha_divide_epoch:
-            this_alpha = args.alpha / (epoch + 1)
+            wandb.log(self.wandb_dict)
+        save((self.args.eval_path, self.args.global_method + "_acc"), self.wandb_dict[self.args.mode + "_acc"])
+        save((self.args.eval_path, self.args.global_method + "_prec"), self.wandb_dict[self.args.mode + "_prec"])
+        save((self.args.eval_path, self.args.global_method + "_sens"), self.wandb_dict[self.args.mode + "_sens"])
+        save((self.args.eval_path, self.args.global_method + "_spec"), self.wandb_dict[self.args.mode + "_spec"])
+        save((self.args.eval_path, self.args.global_method + "_f1"), self.wandb_dict[self.args.mode + "_f1"])
+        save((self.args.eval_path, self.args.global_method + "_loss"), self.wandb_dict[self.args.mode + "_loss"])
 
-    if valloader is not None:
-        model.eval()
-        test_metric = do_evaluation(valloader, model, device)
-        model.train()
+    def _model_test(self):
+        if self.valloader is not None:
+            self.model.eval()
+            self.test_metric = do_evaluation(self.valloader, self.model, self.device)
+            self.model.train()
 
-        print('Final Accuracy of the network on the 10000 test images: %f %%' % test_metric['accuracy'])
-        print('Final Precision of the network on the 10000 test images: %f %%' % test_metric['precision'])
-        print('Final Sensitivity of the network on the 10000 test images: %f %%' % test_metric['sensitivity'])
-        print('Final Specificity of the network on the 10000 test images: %f %%' % test_metric['specificity'])
-        print('Final F1-score of the network on the 10000 test images: %f %%' % test_metric['f1score'])
+            print(f'Final Accuracy of the global model on test set: {self.test_metric["accuracy"]} %%')
+            print(f'Final Precision of the global model on test set: {self.test_metric["precision"]} %%')
+            print(f'Final Sensitivity of the global model on test set: {self.test_metric["sensitivity"]} %%')
+            print(f'Final Specificity of the global model on test set: {self.test_metric["specificity"]} %%')
+            print(f'Final F1-score of the global model on test set: {self.test_metric["f1score"]} %%')
 
-        save((args.eval_path, args.mode + "_test_acc"), test_metric['accuracy'])
-        save((args.eval_path, args.mode + "_test_prec"), test_metric['precision'])
-        save((args.eval_path, args.mode + "_test_sens"), test_metric['sensitivity'])
-        save((args.eval_path, args.mode + "_test_spec"), test_metric['specificity'])
-        save((args.eval_path, args.mode + "_test_f1"), test_metric['f1score'])
+            save((self.args.eval_path, self.args.mode + "_test_acc"), self.test_metric['accuracy'])
+            save((self.args.eval_path, self.args.mode + "_test_prec"), self.test_metric['precision'])
+            save((self.args.eval_path, self.args.mode + "_test_sens"), self.test_metric['sensitivity'])
+            save((self.args.eval_path, self.args.mode + "_test_spec"), self.test_metric['specificity'])
+            save((self.args.eval_path, self.args.mode + "_test_f1"), self.test_metric['f1score'])
+        finish_checkpoint(self.experiment_name, self.args.preserve_checkpoint)
+
+    def _saving_point(self):
+        create_check_point(self.experiment_name, self.model, self.epoch+1, self.loss_train, self.malicious_list,
+                           self.this_lr, self.this_alpha, self.duration)
+
+    def _loading_point(self, checkpoint: dict):
+        self.model.load_state_dict(checkpoint['model'])
+        self.epoch = checkpoint['epoch']
+        self.loss_train = checkpoint['loss']
+        self.malicious_list = checkpoint['malicious']
+        self.this_lr = checkpoint['lr']
+        self.this_alpha = checkpoint['this_alpha']
+        self.duration = checkpoint['duration']
+
+    def train(self):
+        if self.args.use_checkpoint and os.path.isfile('checkpoint/' + self.experiment_name + '.pt'):
+            print("=> Restarting training from the last checkpoint...")
+            checkpoint = load_check_point(self.experiment_name)
+            init_epoch = checkpoint['epoch']
+            self._loading_point(checkpoint)
+        else:
+            init_epoch = 1
+        for epoch in range(init_epoch, self.args.global_epochs + 1):
+            self.epoch = epoch
+
+            # Restart the environment for the next aggregation round
+            self._restart_env()
+
+            print('starting a new epoch')
+            # Perform the participant selection
+            self._select_participants()
+            # Sample participating agents for this global round
+            print(f'Aggregation Round: {self.epoch}/{self.args.global_epochs}')
+            if self.selected_participants is None:
+                return
+
+            # Start the local update for each selected participant
+            print('Training participants')
+            self._local_update()
+
+            # Perform the global aggregation
+            self._global_aggregation()
+            self._update_global_model()
+
+            # Validade the model at each aggregation round with the validation set
+            print('Performing the evaluation')
+            self._model_validation()
+
+            print('Decay LR')
+            self._decay()
+
+            print('Saving the checkpoint')
+            self._saving_point()
+
+        self._model_test()

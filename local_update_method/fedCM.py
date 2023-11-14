@@ -20,7 +20,7 @@ class LocalUpdate(object):
         self.args=args
         self.K = len(self.ldr_train)
 
-    def train(self, net, delta=None):
+    def train(self, net, delta=None, malicious=False):
         net.train()
 
         # Local update via interpolation of local gradient and downloaded global gradient

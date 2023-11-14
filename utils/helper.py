@@ -1,5 +1,6 @@
 import copy
 import os
+import sys
 from collections import Counter
 from functools import reduce
 
@@ -14,14 +15,14 @@ from libs.evaluation.metrics import Evaluator
 
 __all__ = ['l2norm', 'count_label_distribution', 'check_data_distribution', 'check_data_distribution_aug',
            'feature_extractor', 'classifier', 'get_model', 'get_optimizer', 'get_scheduler', 'save', 'shuffle',
-           'do_evaluation']
+           'do_evaluation', 'create_check_point', 'load_check_point', 'finish_checkpoint']
 
 from utils import get_dataset
 from utils.data import FakeCICIDS2017Dataset
 
 
-def l2norm(x,y):
-    z= (((x-y)**2).sum())
+def l2norm(x, y):
+    z = (((x-y)**2).sum())
     return z/(1+len(x))
 
 
@@ -88,20 +89,6 @@ def check_data_distribution_aug(dataloader,class_num:int=10,default_dist:torch.t
     return data_distribution
 
 
-# TODO: Hardcoded Change it
-'''def get_numclasses(dataset: str) -> int:
-    if dataset in ['CIFAR10', "MNIST"]:
-        num_classes = 10
-    elif dataset in ["CIFAR100"]:
-        num_classes = 100
-    elif dataset in ["Tiny-ImageNet"]:
-        num_classes = 200
-    elif dataset in ["CICIDS2017"]:
-        num_classes = 2
-    else:
-        raise Exception("The dataset specified is not available")
-    return num_classes'''
-
 
 def get_model(arch, num_classes, l2_norm):
     #num_classes = get_numclasses(args)
@@ -135,6 +122,7 @@ def save(path_tuple: tuple, metric: float) -> None:
     file = open(path, 'a')
     if exists:
         file.write(',')
+    print("Saving: " + path)
     file.write(str(metric))
     file.close()
 
@@ -200,37 +188,12 @@ def do_evaluation(testloader, model, device: torch.device, evaluate: bool = True
     return metrics
 
 
-def gen_train_fake(samples: int = 10000, features: int = 77, interval: Tuple[int, int] = (0, 1),
-                   classes: tuple = (0, 1)) -> TensorDataset:
-    train_np_x = np.array(
-        [[np.random.uniform(interval[0], interval[1]) for _ in range(features)] for _ in range(samples)])
-    #train_np_y = np.array([shuffle(np.array(classes)) for _ in range(samples)])
-    train_np_y = np.array([np.random.choice(classes) for _ in range(samples)])
-
-    train_tensor_x = torch.from_numpy(train_np_x)
-    train_tensor_y = torch.from_numpy(train_np_y)
-
-    #trainset = TensorDataset(train_tensor_x, train_tensor_y)
-    trainset = FakeCICIDS2017Dataset(train_tensor_x, train_tensor_y)
-    # dataloader = DataLoader(trainset, batch_size=batch, shuffle=False)
-    return trainset
-
-
-def reorder_dictionary(src_dict: dict, range_list: list) -> dict:
-    num_items = len(src_dict)
-    new_keys = np.random.choice(range_list, num_items, replace=False)
-    new_dict = {}
-    for i in src_dict.keys():
-        new_dict[new_keys[i]] = copy.deepcopy(src_dict[i])
-    return new_dict
-
-
 def get_filepath(args, is_malicious=False):
     if is_malicious:
         directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced_fake'
         filepath = directory + '/' + args.mode + (
             str(args.dirichlet_alpha) if args.mode == 'dirichlet' else '') + '_fake_clients' + str(
-            args.num_of_clients) + '_' + 'malicious' + str(args.malicious_rate) + '.txt'
+            int(args.num_of_clients * args.malicious_rate)) + '_' + 'malicious' + str(args.malicious_rate) + '.txt'
     else:
         directory = args.client_data + '/' + args.set + '/' + ('un' if args.data_unbalanced else '') + 'balanced'
         filepath = directory + '/' + args.mode + (
@@ -238,27 +201,20 @@ def get_filepath(args, is_malicious=False):
             args.num_of_clients) + '.txt'
     return directory, filepath
 
-def add_malicious_participants(args, directory: str, filepath: str) -> Tuple[TensorDataset, dict]:
-    print("=> Training with malicious participants!")
-    participants_fake_num = int(args.num_of_clients * args.malicious_rate)
-    trainset_fake = gen_train_fake(samples=args.num_fake_data)
-    dataset_fake = get_dataset(args, trainset_fake, num_of_clients=participants_fake_num, mode=args.mode, compatible=False,
-                               directory=directory, filepath=filepath)
-    dataset_fake = reorder_dictionary(dataset_fake, list(range(args.num_of_clients)))
-    print(dataset_fake.keys())
-    return trainset_fake, dataset_fake
-
 
 def get_participant(args, participant, dataset, dataset_fake, num_of_data_clients, trainset, trainset_fake,
                     aggregation):
     malicious = participant in dataset_fake.keys() and np.random.random() <= args.malicious_proba and \
                 aggregation >= args.malicious_aggregation
-    if participant is malicious:
+
+    if malicious:
         print(f"Training malicious participant {participant}.")
-        num_of_data_clients.append(len(dataset_fake[participant]))
-        idxs = dataset_fake[participant]
-        current_trainset = trainset_fake
-        return num_of_data_clients, idxs, current_trainset, malicious
+        malicious = args.malicious_type
+        if args.malicious_type == 'random':
+            num_of_data_clients.append(len(dataset_fake[participant]))
+            idxs = dataset_fake[participant]
+            current_trainset = trainset_fake
+            return num_of_data_clients, idxs, current_trainset, malicious
     num_of_data_clients.append(len(dataset[participant]))
     idxs = dataset[participant]
     current_trainset = trainset
@@ -294,3 +250,34 @@ def get_scheduler(optimizer, args):
         print("Invalid mode")
         return
     return scheduler
+
+
+def create_check_point(experiment_name: str, model: object, epoch: int, loss_train: list, malicious_list,
+                       lr: float, this_alpha: float, duration: list = [], fedsbs: dict = {}, reputation: dict = {},
+                       delta: dict = {}, selector: object = None):
+
+    os.mkdir("checkpoint") if not os.path.isdir("checkpoint") else None
+    torch.save({
+        'model': model.state_dict(),
+        'epoch': epoch,
+        'loss': loss_train,
+        'malicious': malicious_list,
+        'lr': lr,
+        'this_alpha': this_alpha,
+        'duration': duration,
+        'fesbs': fedsbs,
+        'delta': delta,
+        'reputation': reputation,
+        'oort': selector.state_dict() if selector is not None else {}
+    }, 'checkpoint/' + experiment_name + '.pt')
+
+
+def load_check_point(experiment_name: str) -> dict:
+    return torch.load('checkpoint/' + experiment_name + '.pt')
+
+
+def finish_checkpoint(experiment_name: str, preserve_checkpoint: bool):
+    if preserve_checkpoint:
+        os.rename('checkpoint/' + experiment_name + '.pt', 'checkpoint/' + experiment_name + '_finished.pt')
+    else:
+        os.remove('checkpoint/' + experiment_name + '.pt')

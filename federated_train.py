@@ -6,6 +6,7 @@ import torch
 import numpy as np
 from torch.utils.data import DataLoader
 import os
+import sys
 import random
 import wandb
 import ssl
@@ -22,6 +23,10 @@ def init_env(args):
     group_name = args.mode + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else "")
     job_type = args.global_method + ("_" + args.additional_experiment_name if args.additional_experiment_name != '' else '')
     print("Running the experiment: ", experiment_name)
+    print("Global aggregation algorithm: ", args.global_method)
+    print("Local update method: ", args.method)
+    print(f"Number of selected participants: "
+          f"{int(abs(args.num_of_clients*args.participation_rate))}/{args.num_of_clients}")
 
     if args.use_wandb:
         wandb_log_dir = os.path.join('data1/fed/actreg/wandb', experiment_name)
@@ -45,20 +50,21 @@ def init_env(args):
     # Check if the data path exists. If not it will create
     if not os.path.exists(args.data):
         os.mkdir(args.data)
+    return experiment_name
 
 
 def main():
     """The main function of the federated learning simulator"""
     # initiate the simulator environment
     args = run_args()
-    init_env(args)
+    experiment_name = init_env(args)
 
     if args.train_on_gpu:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     else:
         device = torch.device("cpu")
 
-    print(f'Training on: {device}')
+    print(f'Training on {"GPU" if torch.cuda.is_available() else "CPU"}')
     if args.train_on_gpu:
         print(f'Cuda Device ID: {int(args.cuda_device_id)}')
 
@@ -70,28 +76,37 @@ def main():
         print('The chosen dataset is not valid.')
         print(f'Valid datasets: {list(dataset_loader.DATASETS_LOOKUP_TABLE.keys())}')
     if dataset_factory is not None:
-        global_update, local_update = None, None
+        # global_update, local_update = None, None
 
         trainset, testset, valset = dataset_factory.get_dataset(args)
         testloader = DataLoader(testset, batch_size=args.batch_size,
                                 shuffle=False, num_workers=args.workers)
         valloader = DataLoader(valset, batch_size=args.batch_size,
                                 shuffle=False, num_workers=args.workers)
+        method = args.method.casefold()
         try:
-            method = args.method.casefold()
-            local_update = LOCALUPDATE_LOOKUP_TABLE[method].get_local_method()
+            method = LOCALUPDATE_LOOKUP_TABLE[method]
         except KeyError:
             print('The chosen method is not valid.')
             print(f'Valid methods: {list(LOCALUPDATE_LOOKUP_TABLE.keys())}')
+        local_update = method.get_local_method()
+
+        global_method = args.global_method.casefold()
         try:
-            global_method =args.global_method.casefold()
-            global_update = GLOBALAGGREGATION_LOOKUP_TABLE[global_method].get_global_method()
+            global_method = GLOBALAGGREGATION_LOOKUP_TABLE[global_method]
         except KeyError:
             print('The chosen global method is not valid.')
             print(f'Valid global methods: {list(GLOBALAGGREGATION_LOOKUP_TABLE.keys())}')
+
+        global_update = global_method.get_global_method(args=args, device=device, trainset=trainset,
+                                                        testloader=testloader, valloader=valloader,
+                                                        local_update=local_update,
+                                                        experiment_name=experiment_name)
+
         if global_update is not None and local_update is not None:
-            global_update(args=args, device=device, trainset=trainset, testloader=testloader, valloader=valloader,
-                          local_update=local_update)
+            # global_update(args=args, device=device, trainset=trainset, testloader=testloader, valloader=valloader,
+            #               local_update=local_update)
+            global_update.train()
 
 
 if __name__ == '__main__':

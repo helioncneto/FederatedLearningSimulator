@@ -9,12 +9,14 @@ alpha: 1
 mu: 0.001
 gamma: 0.9
 momentum: 0.0
+num_of_clients: 10
 tau: 1.0
 lr: 0.1
 mode: dirichlet
 dirichlet_alpha: 0.3
 participation_rate: 0.05
 eval_path: Metrics/method
-learning_rate_decay: 0.995 
+learning_rate_decay: 0.995
+use_checkpoint: True
 entity: your_user_name
 set: CICIDS2017
