@@ -18,6 +18,7 @@ class LocalUpdate:
         self.isCICIDS2017 = True if args.mode == "CICIDS2017" else False
         self.loss_func = nn.CrossEntropyLoss()
         self.selected_clients = []
+        self.batch_size = batch_size
         self.ldr_train = DataLoader(DatasetSplit(dataset, idxs), batch_size=batch_size, shuffle=True)
         self.alpha = alpha
         self.args = args
