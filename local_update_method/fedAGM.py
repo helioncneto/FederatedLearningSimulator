@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from utils.malicious import get_malicious_loader
 from utils import DatasetSplit
 import torch
 import copy
@@ -29,6 +30,8 @@ class LocalUpdate:
             param_t.requires_grad = False
         optimizer = optim.SGD(net.parameters(), lr=self.lr, momentum=self.args.momentum, weight_decay=self.args.weight_decay)
         epoch_loss = []
+        # Atualizar as amostras caso for malicioso
+        self.ldr_train = get_malicious_loader(malicious, self.ldr_train, model, self.batch_size, self.args)
 
         # Train and update
         for epoch in range(self.local_epoch):
