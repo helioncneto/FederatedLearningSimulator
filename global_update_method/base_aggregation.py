@@ -150,8 +150,6 @@ class BaseGlobalUpdate:
 
             weight, loss = local_setting.train(net=copy.deepcopy(self.model).to(self.device), malicious=malicious)
             self.local_K.append(local_setting.K)
-            print("\n\n\n PASSEI AQUI")
-            print(self.args.malicious_type)
             if self.args.malicious_type == 'untargeted_fgsm' or self.args.malicious_type == 'targeted_fgsm' or self.args.malicious_type == 'untargeted_pgd' or self.args.malicious_type == 'targeted_pgd':
                 self.malicious_participant_dataloader_table[participant] = local_setting.get_dataloader()
                 print("\n\n\n PASSEI AQUI")
