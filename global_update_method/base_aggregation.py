@@ -153,6 +153,7 @@ class BaseGlobalUpdate:
             if (self.args.malicious_type == 'untargeted_fgsm' or self.args.malicious_type == 'targeted_fgsm' or
                     self.args.malicious_type == 'untargeted_pgd' or self.args.malicious_type == 'targeted_pgd'):
                 self.malicious_participant_dataloader_table[participant] = local_setting.get_dataloader()
+                print("\n\n\n PASSEI AQUI")
             self.local_weight.append(copy.deepcopy(weight))
             self.local_loss[participant] = copy.deepcopy(loss)
             delta = {}
