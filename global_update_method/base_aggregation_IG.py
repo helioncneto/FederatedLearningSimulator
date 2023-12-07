@@ -72,7 +72,6 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
         #self.global_losses = []
         #print("TEMPERATURA: " + str(self.temperature))
         self.model.eval()
-        print(self.malicious_participant_dataloader_table)
 
         for participant in self.selected_participants:
             participant_dataset_loader = get_participant_loader(participant, self.malicious_list,
