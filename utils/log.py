@@ -9,7 +9,7 @@ LOG_LEVEL = {'notset': logging.NOTSET,
              }
 
 
-def setup_custom_logger(name: str, log_level: int):
+def setup_custom_logger(name: str, log_level: int, log_path: str):
     formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
 
     handler = logging.StreamHandler()
@@ -18,4 +18,5 @@ def setup_custom_logger(name: str, log_level: int):
     logger = logging.getLogger(name)
     logger.setLevel(log_level)
     logger.addHandler(handler)
+    logging.basicConfig(filename=log_path, encoding='utf-8', level=log_level)
     return logger

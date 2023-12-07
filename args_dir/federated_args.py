@@ -131,6 +131,14 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--log_path",
+        default="fl_simulator.log",
+        type=str,
+        metavar="N",
+        help="Log level",
+    )
+
+    parser.add_argument(
         "--mal_epsilon",
         default=0.5,
         type=float,

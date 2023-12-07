@@ -58,7 +58,7 @@ def main():
     """The main function of the federated learning simulator"""
     # initiate the simulator environment
     args = run_args()
-    logger = setup_custom_logger('root', LOG_LEVEL[args.log_level])
+    logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
     experiment_name = init_env(args, logger)
 
     if args.train_on_gpu:
