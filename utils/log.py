@@ -9,14 +9,13 @@ LOG_LEVEL = {'notset': logging.NOTSET,
              }
 
 
-def setup_custom_logger(name, log_level):
+def setup_custom_logger(name: str, log_level: int):
     formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
 
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)
 
     logger = logging.getLogger(name)
-    #logging.DEBUG
     logger.setLevel(log_level)
     logger.addHandler(handler)
     return logger

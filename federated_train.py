@@ -23,9 +23,9 @@ def init_env(args, logger):
                                      else '')
     group_name = args.mode + (str(args.dirichlet_alpha) if args.mode == 'dirichlet' else "")
     job_type = args.global_method + ("_" + args.additional_experiment_name if args.additional_experiment_name != '' else '')
-    logger.info("Running the experiment: ", experiment_name)
-    logger.info("Global aggregation algorithm: ", args.global_method)
-    logger.info("Local update method: ", args.method)
+    logger.info(f"Running the experiment: {experiment_name}")
+    logger.info(f"Global aggregation algorithm: {args.global_method}")
+    logger.info(f"Local update method: {args.method}")
     logger.info(f"Number of selected participants: "
           f"{int(abs(args.num_of_clients*args.participation_rate))}/{args.num_of_clients}")
 
@@ -58,7 +58,6 @@ def main():
     """The main function of the federated learning simulator"""
     # initiate the simulator environment
     args = run_args()
-    print("OI ", LOG_LEVEL[args.log_level])
     logger = setup_custom_logger('root', LOG_LEVEL[args.log_level])
     experiment_name = init_env(args, logger)
 
