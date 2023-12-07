@@ -58,6 +58,7 @@ def main():
     """The main function of the federated learning simulator"""
     # initiate the simulator environment
     args = run_args()
+    print("OI ", LOG_LEVEL[args.log_level])
     logger = setup_custom_logger('root', LOG_LEVEL[args.log_level])
     experiment_name = init_env(args, logger)
 
