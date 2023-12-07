@@ -55,10 +55,8 @@ class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
             weight, loss = local_setting.train(net=copy.deepcopy(self.model).to(self.device), malicious=malicious)
             # Novos maliciosos
             if self.args.malicious_type == 'untargeted_fgsm' or self.args.malicious_type == 'targeted_fgsm' or self.args.malicious_type == 'untargeted_pgd' or self.args.malicious_type == 'targeted_pgd':
-
                 if participant in self.dataset_fake.keys():
                     self.malicious_participant_dataloader_table[participant] = local_setting.get_dataloader()
-                    print("\n\n\n PASSEI AQUI")
             self.local_K.append(local_setting.K)
             self.local_weight.append(copy.deepcopy(weight))
             self.local_loss[participant] = copy.deepcopy(loss)
