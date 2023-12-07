@@ -123,6 +123,14 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--log_level",
+        default="debug",
+        type=str,
+        metavar="N",
+        help="Log level",
+    )
+
+    parser.add_argument(
         "--mal_epsilon",
         default=0.5,
         type=float,
