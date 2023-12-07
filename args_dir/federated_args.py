@@ -132,7 +132,7 @@ def parse_arguments():
 
     parser.add_argument(
         "--log_path",
-        default="fl_simulator.log",
+        default="",
         type=str,
         metavar="N",
         help="Log level",
