@@ -104,7 +104,7 @@ class BaseGlobalUpdate:
             else:
                 self.logger.error("The malicious participant type is not defined!")
                 sys.exit()
-            self.logger.debug("Malicious participants IDS: ", list(self.dataset_fake.keys()))
+            self.logger.debug(f"Malicious participants IDS:  {list(self.dataset_fake.keys())}")
             '''for participant in self.dataset_fake.keys():
                 if self.args.malicious_type == 'random':
                     self.malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(self.trainset_fake,
