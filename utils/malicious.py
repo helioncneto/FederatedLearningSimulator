@@ -13,8 +13,9 @@ import pandas as pd
 import os
 
 
-def get_random_datapoints(samples: int, features: int, classes: tuple, interval: Tuple[int, int]):
-    print("   => The malicious participants are using random data")
+def get_random_datapoints(args, samples: int, features: int, classes: tuple, interval: Tuple[int, int]):
+    logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
+    logger.debug("   => The malicious participants are using random data")
     train_np_x = np.array(
         [[np.random.uniform(interval[0], interval[1]) for _ in range(features)] for _ in range(samples)])
     train_np_y = np.array([np.random.choice(classes) for _ in range(samples)])
@@ -29,7 +30,7 @@ def gen_train_malicious_data(args: object, samples: int, dirpath: str, features:
 
     # Create or load the data
     if not os.path.isfile(filepath):
-        train_np_x, train_np_y = get_random_datapoints(samples, features, classes, interval)
+        train_np_x, train_np_y = get_random_datapoints(args, samples, features, classes, interval)
         dataset = np.concatenate((train_np_x, train_np_y.reshape(samples, 1)), axis=1)
         pd.DataFrame(dataset).to_csv(filepath, header=False, index=False)
     else:
@@ -69,7 +70,7 @@ def get_attack_dataloader(atk: object, ldr_train: object, batch_size: int, targe
     adv_data_y = []
 
     for data_batch, target_batch in ldr_train:
-        # print(data_batch)
+        # logger.debug(data_batch)
         if targeted:
             # Put every target as normal sample
             atk.set_mode_targeted_by_label()
@@ -86,27 +87,28 @@ def get_attack_dataloader(atk: object, ldr_train: object, batch_size: int, targe
 
     train_tensor_x = torch.from_numpy(np.array(adv_data_x))
     train_tensor_y = torch.from_numpy(np.array(adv_data_y))
-    print(train_tensor_y)
+    # logger.debug(f"Y: {train_tensor_y}")
     trainset_fake = FakeCICIDS2017Dataset(train_tensor_x, train_tensor_y)
     return DataLoader(trainset_fake, batch_size=batch_size, shuffle=True)
 
 
 def get_malicious_loader(malicious: str, ldr_train: object, model: object, batch_size: int, args: object):
+    logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
     if not malicious:
         return ldr_train
     elif malicious == 'random':
         return ldr_train
     elif malicious == 'untargeted_fgsm' or malicious == 'targeted_fgsm':
         targeted = True if malicious == 'targeted_fgsm' else False
-        print("   => Start performing " + ("" if targeted else "un") + "targeted FGSM attack...")
+        logger.debug("   => Start performing " + ("" if targeted else "un") + "targeted FGSM attack...")
         atk = torchattacks.FGSM(model, eps=args.mal_epsilon)
         return get_attack_dataloader(atk, ldr_train, batch_size, targeted)
     elif malicious == 'untargeted_pgd' or malicious == 'targeted_pgd':
         targeted = True if malicious == 'targeted_jsma' else False
-        print("   => Start performing " + ("" if targeted else "un") + "targeted PGD attack...")
+        logger.debug("   => Start performing " + ("" if targeted else "un") + "targeted PGD attack...")
         # atk = torchattacks.JSMA(model, theta=args.mal_theta, gamma=args.mal_gamma)
         atk = torchattacks.PGD(model, eps=args.mal_epsilon, alpha=args.mal_alpha)
         return get_attack_dataloader(atk, ldr_train, batch_size, targeted)
     else:
-        print("Malicious type incorrect... \nFailed acting maliciously.")
+        logger.debug("Malicious type incorrect... \nFailed acting maliciously.")
         return ldr_train
