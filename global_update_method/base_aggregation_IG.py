@@ -57,7 +57,7 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
             self.not_selected_participants = list(set(self.not_selected_participants) - set(self.selected_participants))
             self.participants_count = update_selection_count(self.selected_participants, self.participants_count)
         elif self.args.participation_rate < 1:
-            self.logger.debug('PARTICIPANT SCORE: ', self.participants_score)
+            self.logger.debug(f'PARTICIPANT SCORE: {self.participants_score}', )
             self.selected_participants, self.not_selected_participants = selection_ig(self.selected_participants_num,
                                                                                       self.ep_greedy,
                                                                                       self.not_selected_participants,
@@ -65,7 +65,7 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
                                                                                       self.temperature,
                                                                                       participants_count=self.participants_count)
             self.participants_count = update_selection_count(self.selected_participants, self.participants_count)
-        self.logger.debug(' Participants IDS: ', self.selected_participants)
+        self.logger.debug(f' Participants IDS: {self.selected_participants}')
 
     def _update_global_model(self):
         super()._update_global_model()

@@ -40,7 +40,7 @@ class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
 
     def _local_update(self):
         for participant in self.selected_participants:
-            logger.debug(f"Training participant: {participant}")
+            self.logger.debug(f"Training participant: {participant}")
             self.num_of_data_clients, idxs, current_trainset, malicious = get_participant(self.args, participant,
                                                                                      self.dataset,
                                                                                      self.dataset_fake,

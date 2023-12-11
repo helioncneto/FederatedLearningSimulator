@@ -4,6 +4,7 @@ from random import Random
 from collections import OrderedDict
 import logging
 import numpy as np2
+from utils.log import setup_custom_logger, LOG_LEVEL
 
 
 def create_training_selector(args):
@@ -43,6 +44,7 @@ class _training_selector:
         self.exploreClients = []
         self.successfulClients = set()
         self.blacklist = None
+        self.logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
 
         np2.random.seed(sample_seed)
 
@@ -198,7 +200,7 @@ class _training_selector:
 
         '''if self.round_threshold < 100.:
             sortedDuration = sorted([self.totalArms[key]['duration'] for key in client_list])
-            print("Sorted Duration: ",sortedDuration)
+            self.logger.debug("Sorted Duration: " + str(sortedDuration))
             self.round_prefer_duration = sortedDuration[min(int(len(sortedDuration) * self.round_threshold/100.), len(sortedDuration)-1)]
         else:
             self.round_prefer_duration = float('inf')'''
@@ -211,27 +213,27 @@ class _training_selector:
                 creward = self.totalArms[clientId]['reward']
                 moving_reward.append(creward)
                 staleness.append(cur_time - self.totalArms[clientId]['time_stamp'])
-        print(f"Clients rewards: {self.totalArms}")
-        print(f"The ordered Keys: {orderedKeys}")
-        print(f"The Black List: {self.blacklist}")
-        print(f"The Feasible Clients: {feasible_clients}")
+        self.logger.debug(f"Clients rewards: {self.totalArms}")
+        self.logger.debug(f"The ordered Keys: {orderedKeys}")
+        self.logger.debug(f"The Black List: {self.blacklist}")
+        self.logger.debug(f"The Feasible Clients: {feasible_clients}")
 
 
         max_reward, min_reward, range_reward, avg_reward, clip_value = self.get_norm(moving_reward, self.args.clip_bound)
         max_staleness, min_staleness, range_staleness, avg_staleness, _ = self.get_norm(staleness, thres=1)
-        #print(f"Moving Rewards: {max_reward}, {min_reward}, {range_reward}, {avg_reward}, {clip_value}")
+        #self.logger.debug(f"Moving Rewards: {max_reward}, {min_reward}, {range_reward}, {avg_reward}, {clip_value}")
 
         for key in orderedKeys:
             # we have played this arm before
             if self.totalArms[key]['count'] > 0:
-                #print(self.totalArms[key]['reward'])
-                #print(clip_value)
+                #self.logger.debug(self.totalArms[key]['reward'])
+                #self.logger.debug(clip_value)
                 creward = min(self.totalArms[key]['reward'], clip_value)
                 numOfExploited += 1
 
                 sc = (creward - min_reward)/float(range_reward) \
                      + math.sqrt(0.1*math.log(cur_time)/self.totalArms[key]['time_stamp']) # temporal uncertainty
-                #print("SC: ", sc)
+                #self.logger.debug("SC: ", sc)
 
                 #sc = (creward - min_reward)/float(range_reward) \
                 #    + self.alpha*((cur_time-self.totalArms[key]['time_stamp']) - min_staleness)/float(range_staleness)
@@ -240,7 +242,7 @@ class _training_selector:
 
                 if clientDuration > self.round_prefer_duration:
                     sc *= ((float(self.round_prefer_duration)/max(1e-4, clientDuration)) ** self.args.round_penalty)
-                    #print("SC Update: ", sc)
+                    #self.logger.debug("SC Update: ", sc)
 
                 if self.totalArms[key]['time_stamp'] == cur_time:
                     allloss[key] = sc
@@ -268,8 +270,8 @@ class _training_selector:
 
         #totalSc = max(1e-4, float(sum([scores[key] for key in pickedClients])))
         totalSc = float(sum([scores[key] for key in pickedClients]))
-        print([scores[key]/totalSc for key in pickedClients])
-        print("Scores: ", scores)
+        self.logger.debug(str([scores[key]/totalSc for key in pickedClients]))
+        self.logger.debug("Scores: " + str(scores))
         pickedClients = list(np2.random.choice(pickedClients, exploitLen, p=[scores[key]/totalSc for key in pickedClients], replace=False))
         self.exploitClients = pickedClients
 
@@ -284,7 +286,7 @@ class _training_selector:
 
                 if clientDuration > self.round_prefer_duration:
                     init_reward[cl] *= ((float(self.round_prefer_duration)/max(1e-4, clientDuration)) ** self.args.round_penalty)
-                print("Init Reward: ", init_reward)
+                self.logger.debug("Init Reward: " + str(init_reward))
 
             # prioritize w/ some rewards (i.e., size)
             exploreLen = min(len(_unexplored), numOfSamples - len(pickedClients))
@@ -345,8 +347,8 @@ class _training_selector:
     def get_norm(self, aList, clip_bound=0.95, thres=1e-4):
         aList.sort()
         clip_idx = min(abs(int(len(aList)*clip_bound)), len(aList)-1)
-        print(f"The clip value is {clip_idx}")
-        print(f"The list is {aList}")
+        self.logger.debug(f"The clip value is {clip_idx}")
+        self.logger.debug(f"The list is {aList}")
         clip_value = aList[clip_idx]
 
         _max = max(aList)

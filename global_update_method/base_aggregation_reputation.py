@@ -113,8 +113,8 @@ class ReputationGlobalUpdate(BaseGlobalUpdate):
 
         selected_loss = [self.local_loss[selected] for selected in self.selected_participants]
         loss_avg = sum(selected_loss) / len(selected_loss)
-        self.logger.debug(' num_of_data_clients : ', [self.num_of_data_clients[selected] for selected in self.selected_participants])
-        self.logger.debug(' Participants IDS: ', self.selected_participants)
+        self.logger.debug(f' num_of_data_clients :  {[self.num_of_data_clients[selected] for selected in self.selected_participants]}')
+        self.logger.debug(f' Participants IDS: {self.selected_participants}')
         self.logger.debug(' Average loss {:.3f}'.format(loss_avg))
         self.loss_train.append(loss_avg)
 

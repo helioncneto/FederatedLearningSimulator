@@ -25,11 +25,11 @@ def selection_on_blocked(selected, participants_count, temperature, selection_he
     is_blocked = True
     sel = 0
     while is_blocked:
-        logger.debug("Vezes que o participante foi selecionado: ", participants_count[selected])
+        logger.debug("Vezes que o participante foi selecionado: " + str(participants_count[selected]))
         p = math.exp(-participants_count[selected] / (temperature))
         rand = random.random()
-        logger.debug("Probabilidade do participante ser selecionado: ", p)
-        logger.debug("Valor aleatório: ", rand)
+        logger.debug("Probabilidade do participante ser selecionado: " + str(p))
+        logger.debug("Valor aleatório: " + str(rand))
         logger.debug(f"O participante {'não foi' if rand < p else 'foi'} bloqueado")
         if rand < p:
             return selected
@@ -50,7 +50,7 @@ def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_
     logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
     selection_helper = copy.deepcopy(participants_score)
     selected_participants = []
-    logger.debug("Vezes Selecionados Geral: ", participants_count)
+    logger.debug("Vezes Selecionados Geral: " + str(participants_count))
     for _ in range(selected_participants_num):
         p = random.random()
         if p < ep_greedy:
