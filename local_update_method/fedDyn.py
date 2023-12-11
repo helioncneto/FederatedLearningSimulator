@@ -65,3 +65,6 @@ class LocalUpdate(object):
         for n, p in net.named_parameters():
             self.local_deltas[user][n] = (local_delta[n] - self.args.alpha * (p - fixed_params[n]).detach().clone().to('cpu'))
         return net.state_dict(), sum(epoch_loss) / len(epoch_loss)
+
+    def get_dataloader(self):
+        return self.ldr_train

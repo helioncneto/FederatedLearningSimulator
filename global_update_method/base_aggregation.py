@@ -105,11 +105,6 @@ class BaseGlobalUpdate:
                 self.logger.error("The malicious participant type is not defined!")
                 sys.exit()
             self.logger.debug(f"Malicious participants IDS:  {list(self.dataset_fake.keys())}")
-            '''for participant in self.dataset_fake.keys():
-                if self.args.malicious_type == 'random':
-                    self.malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(self.trainset_fake,
-                                                                                                       self.dataset_fake[participant]),
-                                                                                                       batch_size=self.args.batch_size, shuffle=True)'''
 
         elif self.args.malicious_rate > 1:
             self.logger.error("The malicious rate cannot be greater than 1")
@@ -152,7 +147,7 @@ class BaseGlobalUpdate:
 
             weight, loss = local_setting.train(net=copy.deepcopy(self.model).to(self.device), malicious=malicious)
             self.local_K.append(local_setting.K)
-            if self.args.malicious_type == 'fgsm':
+            if self.args.malicious_type == 'untargeted_fgsm' or self.args.malicious_type == 'targeted_fgsm' or self.args.malicious_type == 'untargeted_pgd' or self.args.malicious_type == 'targeted_pgd':
                 self.malicious_participant_dataloader_table[participant] = local_setting.get_dataloader()
             self.local_weight.append(copy.deepcopy(weight))
             self.local_loss[participant] = copy.deepcopy(loss)
