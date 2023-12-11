@@ -8,6 +8,7 @@ import numpy as np
 import datasets as local_datasets
 #from args_dir.federated import args
 from libs.dataset import cicids_dataset
+from utils.log import setup_custom_logger, LOG_LEVEL
 
 
 class IDatasetFactory(ABC):
@@ -104,18 +105,19 @@ class CICIDS2017DatasetFactory(IDatasetFactory):
 
     def get_dataset(self, args) -> tuple:
         """Return the CICIDS2017 Dataset class"""
+        logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
         files_path = os.path.join(args.data, 'CICIDS2017')
         cic_ids_path = os.path.join(files_path, 'cicids2017.csv')
 
         if os.path.exists(files_path):
             if os.path.exists(cic_ids_path):
                 if os.stat(cic_ids_path).st_size < 1474940000:
-                    print("[WARN] Somthing happend while downloading CICIDS2017")
+                    logger.warning("[WARN] Somthing happend while downloading CICIDS2017")
                     [os.remove(os.path.join(files_path, cur_file)) for cur_file in os.listdir(files_path)]
                     cicids_dataset.download_cicids2017(path=files_path)
                     cicids_dataset.create_cic_ids_file()
             else:
-                print("CICIDS2017 file not exists.")
+                logger.warning("CICIDS2017 file not exists.")
                 cicids_dataset.download_cicids2017(path=files_path)
                 cicids_dataset.create_cic_ids_file()
         else:
@@ -123,9 +125,9 @@ class CICIDS2017DatasetFactory(IDatasetFactory):
             cicids_dataset.download_cicids2017(path=files_path)
             cicids_dataset.create_cic_ids_file()
 
-        print('Loading CICIDS2017 file...')
+        logger.info('Loading CICIDS2017 file...')
         data = pd.read_csv(cic_ids_path)
-        print(len(data))
+        logger.debug('Data Lenght: ' + str(len(data)))
         data['Flow Bytes/s'] = data['Flow Bytes/s'].astype(float)
         data[' Flow Packets/s'] = data[' Flow Packets/s'].astype(float)
         # Drop NAN and INF

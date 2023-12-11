@@ -50,14 +50,14 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
     def _select_participants(self):
 
         if self.epoch == 1 or self.args.participation_rate >= 1:
-            print('Selecting the participants')
+            logger.debug('Selecting the participants')
             self.selected_participants = np.random.choice(range(self.args.num_of_clients),
                                                           self.selected_participants_num,
                                                           replace=False)
             self.not_selected_participants = list(set(self.not_selected_participants) - set(self.selected_participants))
             self.participants_count = update_selection_count(self.selected_participants, self.participants_count)
         elif self.args.participation_rate < 1:
-            print('PARTICIPANT SCORE: ', self.participants_score)
+            logger.debug('PARTICIPANT SCORE: ', self.participants_score)
             self.selected_participants, self.not_selected_participants = selection_ig(self.selected_participants_num,
                                                                                       self.ep_greedy,
                                                                                       self.not_selected_participants,
@@ -65,7 +65,7 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
                                                                                       self.temperature,
                                                                                       participants_count=self.participants_count)
             self.participants_count = update_selection_count(self.selected_participants, self.participants_count)
-        print(' Participants IDS: ', self.selected_participants)
+        logger.debug(' Participants IDS: ', self.selected_participants)
 
     def _update_global_model(self):
         super()._update_global_model()
@@ -85,18 +85,18 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
                                                        device=self.device, evaluate=False, calc_entropy=True)
                 self.entropy[participant] = current_global_metrics['entropy']
             self.global_losses.append(current_global_metrics['loss'])
-            print(f'=> Participant {participant} loss: {current_global_metrics["loss"]}')
+            logger.debug(f'=> Participant {participant} loss: {current_global_metrics["loss"]}')
 
         self.global_loss = sum(self.global_losses) / len(self.global_losses)
-        print(f'=> Mean global loss: {self.global_loss}')
-        print("TEMPERATURE: " + str(self.temperature))
+        logger.debug(f'=> Mean global loss: {self.global_loss}')
+        logger.debug("TEMPERATURE: " + str(self.temperature))
 
     def _model_validation(self):
         super()._model_validation()
         cur_ig = calc_ig(self.global_loss, self.local_loss, self.entropy)
         self.participants_score, self.ig = update_participants_score(self.participants_score, cur_ig, self.ig,
                                                                      self.eg_momentum)
-        print(f'Information Gain: {self.ig}')
+        logger.debug(f'Information Gain: {self.ig}')
 
     def _decay(self):
         super()._decay()

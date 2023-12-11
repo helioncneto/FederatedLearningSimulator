@@ -4,6 +4,7 @@ import pickle
 import random
 import numpy as np
 from typing import Tuple, List
+from utils.log import setup_custom_logger, LOG_LEVEL
 
 __all__ = ['selection_ig', 'update_participants_score', 'calc_ig', 'load_from_file']
 
@@ -20,19 +21,20 @@ def select_participant(selection_type: str, selection_helper: dict, greedy_index
 
 
 def selection_on_blocked(selected, participants_count, temperature, selection_helper, selection_type):
+    logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
     is_blocked = True
     sel = 0
     while is_blocked:
-        print("Vezes que o participante foi selecionado: ", participants_count[selected])
+        logger.debug("Vezes que o participante foi selecionado: ", participants_count[selected])
         p = math.exp(-participants_count[selected] / (temperature))
         rand = random.random()
-        print("Probabilidade do participante ser selecionado: ", p)
-        print("Valor aleatório: ", rand)
-        print(f"O participante {'não foi' if rand < p else 'foi'} bloqueado")
+        logger.debug("Probabilidade do participante ser selecionado: ", p)
+        logger.debug("Valor aleatório: ", rand)
+        logger.debug(f"O participante {'não foi' if rand < p else 'foi'} bloqueado")
         if rand < p:
             return selected
         else:
-            print(f'Participant {selected} is blocked')
+            logger.debug(f'Participant {selected} is blocked')
             sel += 1
             if sel < len(selection_helper):
                 selected = select_participant(selection_type, selection_helper, sel)
@@ -45,13 +47,14 @@ def selection_on_blocked(selected, participants_count, temperature, selection_he
 
 def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_participants: List[int],
                  participants_score: dict, temperature: int, participants_count: dict = {}) -> tuple:
+    logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
     selection_helper = copy.deepcopy(participants_score)
     selected_participants = []
-    print("Vezes Selecionados Geral: ", participants_count)
+    logger.debug("Vezes Selecionados Geral: ", participants_count)
     for _ in range(selected_participants_num):
         p = random.random()
         if p < ep_greedy:
-            print("Random selection")
+            logger.debug("Random selection")
             if len(not_selected_participants) != 0:
                 selected = np.random.choice(not_selected_participants)
                 not_selected_participants.remove(selected)
@@ -66,7 +69,7 @@ def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_
             selected_participants.append(selected)
         else:
             # Select the best participant
-            print("Greedy selection")
+            logger.debug("Greedy selection")
             sel = 0
             #selected = sorted(selection_helper, key=selection_helper.get, reverse=True)[sel]
             selected = select_participant("greedy", selection_helper, sel)
@@ -106,10 +109,6 @@ def update_participants_score(participants_score: dict, cur_ig: dict, ig: dict,
 def calc_ig(parent_entropy: float, child_entropy: dict, w: dict) -> dict:
     ig = {}
     for idx, (client_id, child) in enumerate(child_entropy.items()):
-        #w = child_size[idx]/parent_size
-        #curr_ig = -np.log(parent_entropy) - np.log(w * child)
-        #curr_ig = -np.log(parent_entropy) - w * (-np.log(child))
-        #curr_ig = -np.log(parent_entropy) - w[client_id] * np.log(child)
         if np.log(child) > 0:
             curr_ig = -np.log(parent_entropy) + w[client_id] * np.log(child)
         else:

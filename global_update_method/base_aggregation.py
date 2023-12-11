@@ -12,6 +12,7 @@ from utils.helper import save, do_evaluation, get_participant, get_filepath
 from utils.malicious import add_malicious_participants
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
+from utils.log import setup_custom_logger, LOG_LEVEL
 
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
@@ -30,6 +31,7 @@ class BaseGlobalUpdate:
         self.total_num_of_data_clients = 1
         self.duration = []
         self.experiment_name = experiment_name
+        self.logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
 
         assert os.path.isdir(self.args.eval_path)
 
@@ -79,7 +81,7 @@ class BaseGlobalUpdate:
 
     def _set_malicious(self):
         if 0 < self.args.malicious_rate <= 1:
-            print("=> Training with malicious participants!")
+            self.logger.info("=> Training with malicious participants!")
             directory, filepath = get_filepath(self.args, True)
             if self.args.malicious_type == 'random':
                 self.trainset_fake, self.dataset_fake = add_malicious_participants(self.args, directory, filepath)
@@ -88,21 +90,21 @@ class BaseGlobalUpdate:
             elif (self.args.malicious_type == 'targeted_fgsm' or self.args.malicious_type == 'untargeted_fgsm'
                   or self.args.malicious_type == 'targeted_pgd' or self.args.malicious_type == 'untargeted_pgd'):
                 if self.args.malicious_type == 'targeted_fgsm' or self.args.malicious_type == 'untargeted_fgsm':
-                    print("   => The malicious participants are using " + (
+                    self.logger.info("   => The malicious participants are using " + (
                         "un" if self.args.malicious_type == 'untargeted_fgsm' else "") + "targeted FGSM attack")
                 elif self.args.malicious_type == 'targeted_pgd' or self.args.malicious_type == 'untargeted_pgd':
-                    print("   => The malicious participants are using " + (
+                    self.logger.info("   => The malicious participants are using " + (
                         "un" if self.args.malicious_type == 'untargeted_jsma' else "") + "targeted PGD attack")
                 mal_num = int(self.args.num_of_clients * self.args.malicious_rate)
                 mal_part_ids = np.random.choice(range(self.args.num_of_clients), mal_num, replace=False)
                 self.dataset_fake = {idx: [] for idx in mal_part_ids}
                 self.trainset_fake = None
             elif self.args.malicious_type == 'jsma':
-                print("   => The malicious participants are using JSMA attack")
+                self.logger.info("   => The malicious participants are using JSMA attack")
             else:
-                print("The malicious participant type is not defined!")
+                self.logger.error("The malicious participant type is not defined!")
                 sys.exit()
-            print("Malicious participants IDS: ", list(self.dataset_fake.keys()))
+            self.logger.debug("Malicious participants IDS: ", list(self.dataset_fake.keys()))
             '''for participant in self.dataset_fake.keys():
                 if self.args.malicious_type == 'random':
                     self.malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(self.trainset_fake,
@@ -110,10 +112,10 @@ class BaseGlobalUpdate:
                                                                                                        batch_size=self.args.batch_size, shuffle=True)'''
 
         elif self.args.malicious_rate > 1:
-            print("The malicious rate cannot be greater than 1")
+            self.logger.error("The malicious rate cannot be greater than 1")
             sys.exit()
         elif self.args.malicious_rate < 0:
-            print("The malicious rate cannot be negative")
+            self.logger.error("The malicious rate cannot be negative")
             sys.exit()
 
     def _decay(self):
@@ -125,7 +127,7 @@ class BaseGlobalUpdate:
 
     def _select_participants(self):
         if self.epoch == 1 or self.args.participation_rate < 1:
-            print('Selecting the participants')
+            self.logger.debug('Selecting the participants')
             self.selected_participants = np.random.choice(range(self.args.num_of_clients),
                                                           self.selected_participants_num,
                                                           replace=False)
@@ -133,7 +135,7 @@ class BaseGlobalUpdate:
     def _local_update(self):
         # for participant in tqdm(self.selected_participants, desc="Local update"):
         for participant in self.selected_participants:
-            print(f"Training participant: {participant}")
+            self.logger.debug(f"Training participant: {participant}")
             self.start_time = time.time()
             self.num_of_data_clients, idxs, current_trainset, malicious = get_participant(self.args, participant,
                                                                                           self.dataset,
@@ -175,21 +177,21 @@ class BaseGlobalUpdate:
     def _update_global_model(self):
         self.model.load_state_dict(self.FedAvg_weight)
         self.loss_avg = sum(self.local_loss) / len(self.local_loss)
-        print(f'- Num. of data per client : {self.num_of_data_clients}')
-        print(f'- Participants IDS: {self.selected_participants}')
-        print(f'- Average loss {self.loss_avg}')
-        print(f"Local losses: {self.local_loss}")
+        self.logger.debug(f'- Num. of data per client : {self.num_of_data_clients}')
+        self.logger.debug(f'- Participants IDS: {self.selected_participants}')
+        self.logger.debug(f'- Average loss {self.loss_avg}')
+        self.logger.debug(f"Local losses: {self.local_loss}")
         self.loss_train.append(self.loss_avg)
 
     def _model_validation(self):
         self.model.eval()
         self.metrics = do_evaluation(testloader=self.testloader, model=self.model, device=self.device)
 
-        print(f'Accuracy of the global model on validation set: {self.metrics["accuracy"]} %%')
-        print(f'Precision of the global model on validation set: {self.metrics["precision"]} %%')
-        print(f'Sensitivity of the global model on validation set: {self.metrics["sensitivity"]} %%')
-        print(f'Specificity of the global model on validation set: {self.metrics["specificity"]} %%')
-        print(f'F1-score of the global model on validation set: {self.metrics["f1score"]} %%')
+        self.logger.debug(f'Accuracy of the global model on validation set: {self.metrics["accuracy"]} %%')
+        self.logger.debug(f'Precision of the global model on validation set: {self.metrics["precision"]} %%')
+        self.logger.debug(f'Sensitivity of the global model on validation set: {self.metrics["sensitivity"]} %%')
+        self.logger.debug(f'Specificity of the global model on validation set: {self.metrics["specificity"]} %%')
+        self.logger.debug(f'F1-score of the global model on validation set: {self.metrics["f1score"]} %%')
         self.model.train()
 
         self.wandb_dict[self.args.mode + "_acc"] = self.metrics['accuracy']
@@ -200,7 +202,7 @@ class BaseGlobalUpdate:
         self.wandb_dict[self.args.mode + '_loss'] = self.loss_avg
         self.wandb_dict['lr'] = self.this_lr
         if self.args.use_wandb:
-            print('logging to wandb...')
+            self.logger.debug('logging to wandb...')
             wandb.log(self.wandb_dict)
         save((self.args.eval_path, self.args.global_method + "_acc"), self.wandb_dict[self.args.mode + "_acc"])
         save((self.args.eval_path, self.args.global_method + "_prec"), self.wandb_dict[self.args.mode + "_prec"])
@@ -215,11 +217,11 @@ class BaseGlobalUpdate:
             self.test_metric = do_evaluation(self.valloader, self.model, self.device)
             self.model.train()
 
-            print(f'Final Accuracy of the global model on test set: {self.test_metric["accuracy"]} %%')
-            print(f'Final Precision of the global model on test set: {self.test_metric["precision"]} %%')
-            print(f'Final Sensitivity of the global model on test set: {self.test_metric["sensitivity"]} %%')
-            print(f'Final Specificity of the global model on test set: {self.test_metric["specificity"]} %%')
-            print(f'Final F1-score of the global model on test set: {self.test_metric["f1score"]} %%')
+            self.logger.debug(f'Final Accuracy of the global model on test set: {self.test_metric["accuracy"]} %%')
+            self.logger.debug(f'Final Precision of the global model on test set: {self.test_metric["precision"]} %%')
+            self.logger.debug(f'Final Sensitivity of the global model on test set: {self.test_metric["sensitivity"]} %%')
+            self.logger.debug(f'Final Specificity of the global model on test set: {self.test_metric["specificity"]} %%')
+            self.logger.debug(f'Final F1-score of the global model on test set: {self.test_metric["f1score"]} %%')
 
             save((self.args.eval_path, self.args.global_method + "_test_acc"), self.test_metric['accuracy'])
             save((self.args.eval_path, self.args.global_method + "_test_prec"), self.test_metric['precision'])
@@ -243,7 +245,7 @@ class BaseGlobalUpdate:
 
     def train(self):
         if self.args.use_checkpoint and os.path.isfile('checkpoint/' + self.experiment_name + '.pt'):
-            print("=> Restarting training from the last checkpoint...")
+            self.logger.debug("=> Restarting training from the last checkpoint...")
             checkpoint = load_check_point(self.experiment_name)
             init_epoch = checkpoint['epoch']
             self._loading_point(checkpoint)
@@ -255,16 +257,16 @@ class BaseGlobalUpdate:
             # Restart the environment for the next aggregation round
             self._restart_env()
 
-            print('starting a new epoch')
+            self.logger.debug('starting a new epoch')
             # Perform the participant selection
             self._select_participants()
             # Sample participating agents for this global round
-            print(f'Aggregation Round: {self.epoch}/{self.args.global_epochs}')
+            self.logger.debug(f'Aggregation Round: {self.epoch}/{self.args.global_epochs}')
             if self.selected_participants is None:
                 return
 
             # Start the local update for each selected participant
-            print('Training participants')
+            self.logger.debug('Training participants')
             self._local_update()
 
             # Perform the global aggregation
@@ -272,13 +274,13 @@ class BaseGlobalUpdate:
             self._update_global_model()
 
             # Validade the model at each aggregation round with the validation set
-            print('Performing the evaluation')
+            self.logger.debug('Performing the evaluation')
             self._model_validation()
 
-            print('Decay LR')
+            self.logger.debug('Decay LR')
             self._decay()
 
-            print('Saving the checkpoint')
+            self.logger.debug('Saving the checkpoint')
             self._saving_point()
 
         self._model_test()
