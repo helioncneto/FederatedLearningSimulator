@@ -14,8 +14,8 @@ import pandas as pd
 import os
 
 
-def get_random_datapoints(args, samples: int, features: int, classes: tuple, interval: Tuple[int, int]):
-    logger = get_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
+def get_random_datapoints(samples: int, features: int, classes: tuple, interval: Tuple[int, int]):
+    logger = get_custom_logger('root')
     logger.debug("   => The malicious participants are using random data")
     train_np_x = np.array(
         [[np.random.uniform(interval[0], interval[1]) for _ in range(features)] for _ in range(samples)])
@@ -31,7 +31,7 @@ def gen_train_malicious_data(args: object, samples: int, dirpath: str, features:
 
     # Create or load the data
     if not os.path.isfile(filepath):
-        train_np_x, train_np_y = get_random_datapoints(args, samples, features, classes, interval)
+        train_np_x, train_np_y = get_random_datapoints(samples, features, classes, interval)
         dataset = np.concatenate((train_np_x, train_np_y.reshape(samples, 1)), axis=1)
         pd.DataFrame(dataset).to_csv(filepath, header=False, index=False)
     else:
@@ -94,7 +94,7 @@ def get_attack_dataloader(atk: object, ldr_train: object, batch_size: int, targe
 
 
 def get_malicious_loader(malicious: str, ldr_train: object, model: object, batch_size: int, args: object):
-    logger = get_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
+    logger = get_custom_logger('root')
     if not malicious:
         return ldr_train
     elif malicious == 'random':

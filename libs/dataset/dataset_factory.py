@@ -105,7 +105,7 @@ class CICIDS2017DatasetFactory(IDatasetFactory):
 
     def get_dataset(self, args) -> tuple:
         """Return the CICIDS2017 Dataset class"""
-        logger = get_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
+        logger = get_custom_logger('root')
         files_path = os.path.join(args.data, 'CICIDS2017')
         cic_ids_path = os.path.join(files_path, 'cicids2017.csv')
 

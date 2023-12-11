@@ -44,7 +44,7 @@ class _training_selector:
         self.exploreClients = []
         self.successfulClients = set()
         self.blacklist = None
-        self.logger = get_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
+        self.logger = get_custom_logger('root')
 
         np2.random.seed(sample_seed)
 

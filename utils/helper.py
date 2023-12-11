@@ -20,6 +20,7 @@ __all__ = ['l2norm', 'count_label_distribution', 'check_data_distribution', 'che
 
 from utils import get_dataset
 from utils.data import FakeCICIDS2017Dataset
+from utils.log import get_custom_logger
 
 
 def l2norm(x, y):
@@ -92,13 +93,15 @@ def check_data_distribution_aug(dataloader,class_num:int=10,default_dist:torch.t
 
 
 def get_model(arch, num_classes, l2_norm):
+    logger = get_custom_logger('root')
     #num_classes = get_numclasses(args)
-    print("=> Creating model '{}'".format(arch))
+    logger.debug("=> Creating model '{}'".format(arch))
     model = models.__dict__[arch](num_classes=num_classes, l2_norm=l2_norm)
     return model
 
 
 def get_optimizer(args, parameters):
+    logger = get_custom_logger('root')
     if args.set == 'CIFAR10':
         optimizer = optim.SGD(parameters, lr=args.lr,momentum=args.momentum, weight_decay=args.weight_decay)
     elif args.set == "MNIST":
@@ -106,12 +109,13 @@ def get_optimizer(args, parameters):
     elif args.set == "CIFAR100":
         optimizer = optim.SGD(parameters, lr=args.lr,momentum=args.momentum, weight_decay=args.weight_decay)
     else:
-        print("Invalid mode")
+        logger.error("Invalid mode")
         return
     return optimizer
 
 
 def save(path_tuple: tuple, metric: float) -> None:
+    logger = get_custom_logger('root')
     if len(path_tuple) == 1:
         path = path_tuple[0]
     else:
@@ -123,7 +127,7 @@ def save(path_tuple: tuple, metric: float) -> None:
     file = open(path, 'a')
     if exists:
         file.write(',')
-    print("Saving: " + path)
+    logger.info("Saving: " + path)
     file.write(str(metric))
     file.close()
 
@@ -204,7 +208,7 @@ def get_filepath(args, is_malicious=False):
 
 def get_participant(args, participant, dataset, dataset_fake, num_of_data_clients, trainset, trainset_fake,
                     aggregation):
-    logger = get_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
+    logger = get_custom_logger('root')
     malicious = participant in dataset_fake.keys() and np.random.random() <= args.malicious_proba and \
                 aggregation >= args.malicious_aggregation
 
@@ -231,6 +235,7 @@ def get_participant_loader(participant, malicious_list, participant_dataset_load
 
 
 def get_scheduler(optimizer, args):
+    logger = get_custom_logger('root')
     if args.set=='CIFAR10':
 
         scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.998)
@@ -248,7 +253,7 @@ def get_scheduler(optimizer, args):
         #                         lr_lambda=lambda epoch: args.learning_rate_decay ** (int(epoch/50)),
         #                         )
     else:
-        print("Invalid mode")
+        logger.error("Invalid mode")
         return
     return scheduler
 

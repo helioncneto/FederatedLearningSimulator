@@ -1,7 +1,7 @@
 from args_dir.federated_args import run_args
 import libs.dataset.dataset_factory as dataset_loader
 from libs.methods.method_factory import LOCALUPDATE_LOOKUP_TABLE, GLOBALAGGREGATION_LOOKUP_TABLE
-from utils.log import get_custom_logger, setup_custom_logger, LOG_LEVEL
+from utils.log import setup_custom_logger, LOG_LEVEL
 
 import torch
 import numpy as np
