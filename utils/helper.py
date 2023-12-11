@@ -3,6 +3,7 @@ import os
 import sys
 from collections import Counter
 from functools import reduce
+from utils.log import setup_custom_logger, LOG_LEVEL
 
 import numpy as np
 import models
@@ -175,7 +176,6 @@ def do_evaluation(testloader, model, device: torch.device, evaluate: bool = True
         preds = preds.cpu()
         full_lables = full_lables.cpu()
     if evaluate:
-        print('calculating avg accuracy')
         evaluator = Evaluator('accuracy', 'precision', 'sensitivity', 'specificity', 'f1score')
         metrics = evaluator.run_metrics(preds.numpy(), full_lables.numpy())
         metrics['loss'] = loss_avg
@@ -204,11 +204,12 @@ def get_filepath(args, is_malicious=False):
 
 def get_participant(args, participant, dataset, dataset_fake, num_of_data_clients, trainset, trainset_fake,
                     aggregation):
+    logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
     malicious = participant in dataset_fake.keys() and np.random.random() <= args.malicious_proba and \
                 aggregation >= args.malicious_aggregation
 
     if malicious:
-        print(f"Training malicious participant {participant}.")
+        logger.debug(f"Training malicious participant {participant}.")
         malicious = args.malicious_type
         if args.malicious_type == 'random':
             num_of_data_clients.append(len(dataset_fake[participant]))

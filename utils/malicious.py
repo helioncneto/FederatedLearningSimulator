@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from typing import Tuple
 from utils.data import FakeCICIDS2017Dataset
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
+from utils.log import setup_custom_logger, LOG_LEVEL
 
 import torch.nn.functional as F
 import torchattacks
