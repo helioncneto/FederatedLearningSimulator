@@ -58,7 +58,7 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
             self.participants_count = update_selection_count(self.selected_participants, self.participants_count)
         elif self.args.participation_rate < 1:
             self.logger.debug(f'PARTICIPANT SCORE: {self.participants_score}', )
-            self.selected_participants, self.not_selected_participants = selection_ig(self.selected_participants_num,
+            self.selected_participants, self.not_selected_participants = selection_ig(self.args, self.selected_participants_num,
                                                                                       self.ep_greedy,
                                                                                       self.not_selected_participants,
                                                                                       self.participants_score,

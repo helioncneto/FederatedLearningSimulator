@@ -20,7 +20,7 @@ def select_participant(selection_type: str, selection_helper: dict, greedy_index
         return selected
 
 
-def selection_on_blocked(selected, participants_count, temperature, selection_helper, selection_type):
+def selection_on_blocked(args, selected, participants_count, temperature, selection_helper, selection_type):
     logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
     is_blocked = True
     sel = 0
@@ -45,7 +45,7 @@ def selection_on_blocked(selected, participants_count, temperature, selection_he
     return selected
 
 
-def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_participants: List[int],
+def selection_ig(args, selected_participants_num: int, ep_greedy: float, not_selected_participants: List[int],
                  participants_score: dict, temperature: int, participants_count: dict = {}) -> tuple:
     logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
     selection_helper = copy.deepcopy(participants_score)
@@ -63,7 +63,7 @@ def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_
                 selected = select_participant("random", selection_helper)
                 if len(participants_count.keys()) != 0:
                     if selected in participants_count.keys():
-                        selected = selection_on_blocked(selected, participants_count, temperature, selection_helper,
+                        selected = selection_on_blocked(args, selected, participants_count, temperature, selection_helper,
                                                         "random")
             selection_helper.pop(selected)
             selected_participants.append(selected)
@@ -75,7 +75,7 @@ def selection_ig(selected_participants_num: int, ep_greedy: float, not_selected_
             selected = select_participant("greedy", selection_helper, sel)
             if len(participants_count.keys()) != 0:
                 if selected in participants_count.keys():
-                    selected = selection_on_blocked(selected, participants_count, temperature, selection_helper,
+                    selected = selection_on_blocked(args, selected, participants_count, temperature, selection_helper,
                                                     "greedy")
             if selected in not_selected_participants:
                 not_selected_participants.remove(selected)

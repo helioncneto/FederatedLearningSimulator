@@ -2,7 +2,6 @@
 import time
 from random import random
 from typing import Tuple
-from libs.methods.ig import selection_ig, update_participants_score, calc_ig
 from utils import get_scheduler, get_optimizer, get_model, get_dataset
 import numpy as np
 from utils import *
