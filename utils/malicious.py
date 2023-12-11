@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from typing import Tuple
 from utils.data import FakeCICIDS2017Dataset
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
-from utils.log import setup_custom_logger, LOG_LEVEL
+from utils.log import get_custom_logger, LOG_LEVEL
 
 import torch.nn.functional as F
 import torchattacks
@@ -15,7 +15,7 @@ import os
 
 
 def get_random_datapoints(args, samples: int, features: int, classes: tuple, interval: Tuple[int, int]):
-    logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
+    logger = get_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
     logger.debug("   => The malicious participants are using random data")
     train_np_x = np.array(
         [[np.random.uniform(interval[0], interval[1]) for _ in range(features)] for _ in range(samples)])
@@ -94,7 +94,7 @@ def get_attack_dataloader(atk: object, ldr_train: object, batch_size: int, targe
 
 
 def get_malicious_loader(malicious: str, ldr_train: object, model: object, batch_size: int, args: object):
-    logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
+    logger = get_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
     if not malicious:
         return ldr_train
     elif malicious == 'random':

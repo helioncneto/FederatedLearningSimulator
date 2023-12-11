@@ -12,7 +12,7 @@ from utils.helper import save, do_evaluation, get_participant, get_filepath
 from utils.malicious import add_malicious_participants
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
-from utils.log import setup_custom_logger, LOG_LEVEL
+from utils.log import get_custom_logger, LOG_LEVEL
 
 
 #classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
@@ -31,7 +31,7 @@ class BaseGlobalUpdate:
         self.total_num_of_data_clients = 1
         self.duration = []
         self.experiment_name = experiment_name
-        self.logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
+        self.logger = get_custom_logger('root')
 
         assert os.path.isdir(self.args.eval_path)
 

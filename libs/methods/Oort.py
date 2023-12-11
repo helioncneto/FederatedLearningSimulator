@@ -4,7 +4,7 @@ from random import Random
 from collections import OrderedDict
 import logging
 import numpy as np2
-from utils.log import setup_custom_logger, LOG_LEVEL
+from utils.log import get_custom_logger, LOG_LEVEL
 
 
 def create_training_selector(args):
@@ -44,7 +44,7 @@ class _training_selector:
         self.exploreClients = []
         self.successfulClients = set()
         self.blacklist = None
-        self.logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
+        self.logger = get_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
 
         np2.random.seed(sample_seed)
 

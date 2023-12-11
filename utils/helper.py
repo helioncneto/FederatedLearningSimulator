@@ -3,7 +3,7 @@ import os
 import sys
 from collections import Counter
 from functools import reduce
-from utils.log import setup_custom_logger, LOG_LEVEL
+from utils.log import get_custom_logger, LOG_LEVEL
 
 import numpy as np
 import models
@@ -204,7 +204,7 @@ def get_filepath(args, is_malicious=False):
 
 def get_participant(args, participant, dataset, dataset_fake, num_of_data_clients, trainset, trainset_fake,
                     aggregation):
-    logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
+    logger = get_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
     malicious = participant in dataset_fake.keys() and np.random.random() <= args.malicious_proba and \
                 aggregation >= args.malicious_aggregation
 

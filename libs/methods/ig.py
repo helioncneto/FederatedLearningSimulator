@@ -4,7 +4,7 @@ import pickle
 import random
 import numpy as np
 from typing import Tuple, List
-from utils.log import setup_custom_logger, LOG_LEVEL
+from utils.log import get_custom_logger, LOG_LEVEL
 
 __all__ = ['selection_ig', 'update_participants_score', 'calc_ig', 'load_from_file']
 
@@ -21,7 +21,7 @@ def select_participant(selection_type: str, selection_helper: dict, greedy_index
 
 
 def selection_on_blocked(args, selected, participants_count, temperature, selection_helper, selection_type):
-    logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
+    logger = get_custom_logger('root')
     is_blocked = True
     sel = 0
     while is_blocked:
@@ -47,7 +47,7 @@ def selection_on_blocked(args, selected, participants_count, temperature, select
 
 def selection_ig(args, selected_participants_num: int, ep_greedy: float, not_selected_participants: List[int],
                  participants_score: dict, temperature: int, participants_count: dict = {}) -> tuple:
-    logger = setup_custom_logger('root', LOG_LEVEL[args.log_level], args.log_path)
+    logger = get_custom_logger('root')
     selection_helper = copy.deepcopy(participants_score)
     selected_participants = []
     logger.debug("Vezes Selecionados Geral: " + str(participants_count))
