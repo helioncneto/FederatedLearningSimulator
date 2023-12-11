@@ -221,11 +221,11 @@ class BaseGlobalUpdate:
             print(f'Final Specificity of the global model on test set: {self.test_metric["specificity"]} %%')
             print(f'Final F1-score of the global model on test set: {self.test_metric["f1score"]} %%')
 
-            save((self.args.eval_path, self.args.mode + "_test_acc"), self.test_metric['accuracy'])
-            save((self.args.eval_path, self.args.mode + "_test_prec"), self.test_metric['precision'])
-            save((self.args.eval_path, self.args.mode + "_test_sens"), self.test_metric['sensitivity'])
-            save((self.args.eval_path, self.args.mode + "_test_spec"), self.test_metric['specificity'])
-            save((self.args.eval_path, self.args.mode + "_test_f1"), self.test_metric['f1score'])
+            save((self.args.eval_path, self.args.global_method + "_test_acc"), self.test_metric['accuracy'])
+            save((self.args.eval_path, self.args.global_method + "_test_prec"), self.test_metric['precision'])
+            save((self.args.eval_path, self.args.global_method + "_test_sens"), self.test_metric['sensitivity'])
+            save((self.args.eval_path, self.args.global_method + "_test_spec"), self.test_metric['specificity'])
+            save((self.args.eval_path, self.args.global_method + "_test_f1"), self.test_metric['f1score'])
         finish_checkpoint(self.experiment_name, self.args.preserve_checkpoint)
 
     def _saving_point(self):
