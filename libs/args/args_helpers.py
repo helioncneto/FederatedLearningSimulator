@@ -352,7 +352,7 @@ def parse_arguments():
     parser.add_argument(
         "--clip_bound",
         default=0.95,
-        type=str,
+        type=float,
         metavar="N",
         help="The clip bound value for Oort",
     )
