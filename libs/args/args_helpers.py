@@ -346,7 +346,15 @@ def parse_arguments():
         default=".",
         type=str,
         metavar="N",
-        help="gradient clippling max norm",
+        help="The path where the evaluations will be saved",
+    )
+
+    parser.add_argument(
+        "--clip_bound",
+        default=0.95,
+        type=str,
+        metavar="N",
+        help="The clip bound value for Oort",
     )
 
     ## Dataset

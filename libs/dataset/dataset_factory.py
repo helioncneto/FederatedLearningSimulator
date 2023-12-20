@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 import datasets as local_datasets
-#from args_dir.federated import args
+#from args.federated import args
 from libs.dataset import cicids_dataset
 from utils.log import get_custom_logger, LOG_LEVEL
 
