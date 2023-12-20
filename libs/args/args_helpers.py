@@ -349,14 +349,6 @@ def parse_arguments():
         help="The path where the evaluations will be saved",
     )
 
-    parser.add_argument(
-        "--clip_bound",
-        default=0.95,
-        type=float,
-        metavar="N",
-        help="The clip bound value for Oort",
-    )
-
     ## Dataset
     parser.add_argument("--set", help="name of dataset", type=str, default="CIFAR10")
     parser.add_argument(
