@@ -95,9 +95,7 @@ def get_attack_dataloader(atk: object, ldr_train: object, batch_size: int, targe
 
 def get_malicious_loader(malicious: str, ldr_train: object, model: object, batch_size: int, args: object):
     logger = get_custom_logger('root')
-    if not malicious:
-        return ldr_train
-    elif malicious == 'random':
+    if not malicious or malicious == 'random':
         return ldr_train
     elif malicious == 'untargeted_fgsm' or malicious == 'targeted_fgsm':
         targeted = True if malicious == 'targeted_fgsm' else False
