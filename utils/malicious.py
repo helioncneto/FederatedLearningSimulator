@@ -118,6 +118,7 @@ def get_malicious_benign_dataset(dataset: dict, dataset_fake: dict) -> dict:
     mal_parts = list(dataset_fake.keys())
     benig_selected = np.random.choice(benign_parts, len(mal_parts), replace=False)
     for i in range(len(mal_parts)):
+        print(f"O que é: {type(dataset[benig_selected[i]])}")
         print(f"Antes: {len(dataset[benig_selected[i]])}")
         dataset[benig_selected[i]] = dataset[benig_selected[i]] + dataset[mal_parts[i]]
         print(f"Depois: {len(dataset[benig_selected[i]])}")
