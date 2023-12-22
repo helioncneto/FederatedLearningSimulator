@@ -32,18 +32,13 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
         self.eg_momentum = 0.9
         self.temperature = args.temperature
         self.cool = args.cool
-        print("CHEGUEI AQUI")
-        print(self.participant_dataloader_table)
+        self._get_dataloader_lookup_table()
 
     def _get_dataloader_lookup_table(self):
         for participant in range(self.args.num_of_clients):
             participant_dataset_ldr = DataLoader(DatasetSplit(self.trainset, self.dataset[participant]),
                                                  batch_size=self.args.batch_size, shuffle=True)
             self.participant_dataloader_table[participant] = participant_dataset_ldr
-
-    def _set_malicious(self):
-        super()._set_malicious()
-        self._get_dataloader_lookup_table()
 
     def _get_fedsbs_args(self):
         return {'ig': self.ig, 'entropy': self.entropy, 'participants_score': self.participants_score,
