@@ -36,9 +36,9 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
     def _get_dataloader_lookup_table(self):
         for participant in range(self.args.num_of_clients):
             print(participant)
-            participant_dataset_ldr = DataLoader(DatasetSplit(self.trainset, self.dataset[participant]),
-                                                 batch_size=self.args.batch_size, shuffle=True)
-            self.participant_dataloader_table[participant] = participant_dataset_ldr
+            # participant_dataset_ldr = DataLoader(DatasetSplit(self.trainset, self.dataset[participant]),
+            #                                      batch_size=self.args.batch_size, shuffle=True)
+            # self.participant_dataloader_table[participant] = participant_dataset_ldr
 
     def _set_malicious(self):
         super()._set_malicious()
