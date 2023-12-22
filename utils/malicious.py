@@ -120,4 +120,6 @@ def get_malicious_benign_dataset(dataset: dict, dataset_fake: dict) -> dict:
     for i in range(len(mal_parts)):
         dataset[benig_selected[i]] = dataset[benig_selected[i]] + dataset[mal_parts[i]]
 
+    return dataset
+
 
