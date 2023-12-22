@@ -32,6 +32,7 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
         self.eg_momentum = 0.9
         self.temperature = args.temperature
         self.cool = args.cool
+        print(self.participant_dataloader_table)
 
     def _get_dataloader_lookup_table(self):
         for participant in range(self.args.num_of_clients):
