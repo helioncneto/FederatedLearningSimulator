@@ -18,6 +18,7 @@ class DeltaFedSBSGlobalUpdate(FedSBSGlobalUpdate):
     def __init__(self, args, device, trainset, testloader, local_update, experiment_name, valloader=None):
         super().__init__(args, device, trainset, testloader, local_update, experiment_name, valloader)
         self.this_tau = args.tau
+        print("CHEGUEI AQUI")
         self.participant_dataloader_table = {}
         self.global_delta = copy.deepcopy(self.model.state_dict())
         self.m = max(int(args.participation_rate * args.num_of_clients), 1)
