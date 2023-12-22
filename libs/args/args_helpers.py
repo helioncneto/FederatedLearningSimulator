@@ -659,19 +659,19 @@ def parse_arguments():
 
     parser.add_argument(
         "--train_size",
-        default=0.9,
+        default=0.8,
         type=float,
         help="The size of the train set",
     )
     parser.add_argument(
         "--test_size",
-        default=0.05,
+        default=0.1,
         type=float,
         help="The size of the test set",
     )
     parser.add_argument(
         "--val_size",
-        default=0.05,
+        default=0.1,
         type=float,
         help="The size of the val set",
     )
