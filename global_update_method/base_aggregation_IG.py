@@ -39,7 +39,6 @@ class FedSBSGlobalUpdate(BaseGlobalUpdate):
             participant_dataset_ldr = DataLoader(DatasetSplit(self.trainset, self.dataset[participant]),
                                                  batch_size=self.args.batch_size, shuffle=True)
             self.participant_dataloader_table[participant] = participant_dataset_ldr
-        print(f"AQUII: {self.participant_dataloader_table.keys()}")
 
     def _get_fedsbs_args(self):
         return {'ig': self.ig, 'entropy': self.entropy, 'participants_score': self.participants_score,
