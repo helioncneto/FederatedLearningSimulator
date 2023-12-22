@@ -111,3 +111,15 @@ def get_malicious_loader(malicious: str, ldr_train: object, model: object, batch
     else:
         logger.debug("Malicious type incorrect... \nFailed acting maliciously.")
         return ldr_train
+
+
+def get_malicious_benign_dataset(dataset: dict, dataset_fake: dict) -> dict:
+    benign_parts = list(set(dataset.keys()) - set(dataset_fake.keys()))
+    mal_parts = list(dataset_fake.keys())
+    benig_selected = np.random.choice(benign_parts, len(mal_parts), replace=False)
+    for i in range(len(mal_parts)):
+        print(f"Antes: {len(dataset[benig_selected[i]])}")
+        dataset[benig_selected[i]] = dataset[benig_selected[i]] + dataset[mal_parts[i]]
+        print(f"Depois: {len(dataset[benig_selected[i]])}")
+
+

@@ -9,7 +9,7 @@ from utils import *
 from libs.dataset.dataset_factory import NUM_CLASSES_LOOKUP_TABLE
 from libs.evaluation.metrics import Evaluator
 from utils.helper import save, do_evaluation, get_participant, get_filepath
-from utils.malicious import add_malicious_participants
+from utils.malicious import add_malicious_participants, get_malicious_benign_dataset
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 from utils.log import get_custom_logger, LOG_LEVEL
@@ -85,6 +85,9 @@ class BaseGlobalUpdate:
             directory, filepath = get_filepath(self.args, True)
             if self.args.malicious_type == 'random':
                 self.trainset_fake, self.dataset_fake = add_malicious_participants(self.args, directory, filepath)
+                if self.args.malicious_proba >= 1:
+                    # This method avoid data waste when the participant act 100% maliciously
+                    self.dataset = get_malicious_benign_dataset(self.dataset, self.dataset_fake)
                 for participant in self.dataset_fake.keys():
                     self.malicious_participant_dataloader_table[participant] = DataLoader(DatasetSplit(self.trainset_fake, self.dataset_fake[participant]), batch_size=self.args.batch_size, shuffle=True)
             elif (self.args.malicious_type == 'targeted_fgsm' or self.args.malicious_type == 'untargeted_fgsm'
