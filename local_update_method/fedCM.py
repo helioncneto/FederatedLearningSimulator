@@ -33,7 +33,7 @@ class LocalUpdate(object):
             batch_loss = []
             for batch_idx, (images, labels) in enumerate(self.ldr_train):
                 images, labels = images.to(self.device), labels.to(self.device)
-                net.zero_grad()
+                optimizer.zero_grad()
                 if self.args.arch == "ResNet18":
                     log_probs = net(images)
                 else:

@@ -44,7 +44,7 @@ class LocalUpdate:
             batch_loss = torch.tensor([], requires_grad=False).to(self.device)
             for batch_idx, (images, labels) in enumerate(self.ldr_train):
                 images, labels = images.to(self.device), labels.to(self.device)
-                net.zero_grad()
+                optimizer.zero_grad()
                 log_probs = model(images)
 
                 if self.oneclass:

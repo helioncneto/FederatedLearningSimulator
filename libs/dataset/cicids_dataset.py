@@ -34,9 +34,10 @@ class CICIDS2017Dataset(Dataset):
         if normalize == 'minmax':
             x = self.x.values
             col = self.x.columns
-            # min_max_scaler = preprocessing.MinMaxScaler()
-            # x_scaled = min_max_scaler.fit_transform(x)
-            x_scaled = self.rescale(x)
+            min_max_scaler = preprocessing.MinMaxScaler()
+            x_scaled = min_max_scaler.fit(x)
+            x_scaled = min_max_scaler.transform(x)
+            # x_scaled = self.rescale(x)
             self.x = pd.DataFrame(x_scaled, columns=col)
 
     def __len__(self):

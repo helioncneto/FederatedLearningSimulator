@@ -39,7 +39,7 @@ class LocalUpdate:
             batch_loss = []
             for batch_idx, (x, labels) in enumerate(self.ldr_train):
                 x, labels = x.to(self.device), labels.to(self.device)
-                net.zero_grad()
+                optimizer.zero_grad()
                 log_probs = net(x)
                 #if self.args.arch == "ResNet18":
                 #    log_probs = net(x)
